@@ -228,6 +228,7 @@ button:active {
   border: 2px solid #e0e0e0;
   border-radius: 10px;
   padding: 20px;
+  padding-right: 50px;
   position: relative;
 }
 
@@ -276,8 +277,8 @@ button:active {
 
 .remove-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 15px;
+  right: 15px;
   background: #e74c3c;
   padding: 5px 10px;
   font-size: 0.8em;

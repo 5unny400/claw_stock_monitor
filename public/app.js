@@ -143,22 +143,40 @@ function addStockBySymbol(symbol, name) {
 
 // 添加自选股
 async function addStock() {
-  const symbol = document.getElementById('stockSymbol').value.trim();
-  if (!symbol) {
-    alert('请输入股票代码');
+  let input = document.getElementById('stockSymbol').value.trim();
+  if (!input) {
+    alert('请输入股票代码或名称');
     return;
   }
   
-  // 移除前缀进行检查
+  let symbol = input;
+  // 如果不是纯数字，先搜索获取代码
+  if (!/^\d+$/.test(input.replace(/^(HK|US)/, ''))) {
+    try {
+      const searchResponse = await fetch(`/api/search?keyword=${encodeURIComponent(input)}`);
+      const searchData = await searchResponse.json();
+      
+      if (!searchData.results || searchData.results.length === 0) {
+        alert(`未找到股票：${input}`);
+        return;
+      }
+      
+      symbol = searchData.results[0].symbol;
+      if (searchData.results[0].market === '港股') symbol = 'HK' + symbol;
+      else if (searchData.results[0].market === '美股') symbol = 'US' + symbol;
+    } catch (e) {
+      alert('搜索失败');
+      return;
+    }
+  }
+  
   const cleanSymbol = symbol.replace(/^(HK|US)/, '');
   if (watchlist.some(s => s.replace(/^(HK|US)/, '') === cleanSymbol)) {
     alert('该股票已在自选列表中');
-    // 添加成功后清空输入框并刷新
     document.getElementById('stockSymbol').value = '';
     return;
   }
   
-  // 验证股票是否存在 - 使用验票 API
   try {
     const response = await fetch(`/api/stock/${symbol}/info`);
     const data = await response.json();
@@ -168,7 +186,6 @@ async function addStock() {
       return;
     }
     
-    // 保存不带前缀的代码
     watchlist.push(cleanSymbol);
     localStorage.setItem('watchlist', JSON.stringify(watchlist));
     renderWatchlist();
@@ -277,9 +294,9 @@ function toggleAutoRefresh() {
 
 // 验票
 async function verifyStock() {
-  const symbol = document.getElementById('verifySymbol').value.trim();
-  if (!symbol) {
-    alert('请输入股票代码');
+  let input = document.getElementById('verifySymbol').value.trim();
+  if (!input) {
+    alert('请输入股票代码或名称');
     return;
   }
   
@@ -287,6 +304,22 @@ async function verifyStock() {
   resultDiv.innerHTML = '<div class="loading">验证中...</div>';
   
   try {
+    let symbol = input;
+    // 如果不是纯数字，先搜索获取代码
+    if (!/^\d+$/.test(input.replace(/^(HK|US)/, ''))) {
+      const searchResponse = await fetch(`/api/search?keyword=${encodeURIComponent(input)}`);
+      const searchData = await searchResponse.json();
+      
+      if (!searchData.results || searchData.results.length === 0) {
+        resultDiv.innerHTML = `<div class="empty-tip">未找到股票：${input}</div>`;
+        return;
+      }
+      
+      symbol = searchData.results[0].symbol;
+      if (searchData.results[0].market === '港股') symbol = 'HK' + symbol;
+      else if (searchData.results[0].market === '美股') symbol = 'US' + symbol;
+    }
+    
     // 获取实时行情
     const quoteResponse = await fetch(`/api/stock/${symbol}`);
     const quoteData = await quoteResponse.json();
@@ -332,11 +365,11 @@ async function verifyStock() {
         </div>
         <div class="verify-item">
           <div class="verify-label">更新时间</div>
-          <div class="verify-value">${quoteData.date} ${quoteData.time}</div>
+          <div class="verify-value">${infoData.updateTime || new Date().toLocaleString('zh-CN')}</div>
         </div>
         <div class="verify-item">
           <div class="verify-label">数据时间戳</div>
-          <div class="verify-value">${new Date(quoteData.timestamp).toLocaleString('zh-CN')}</div>
+          <div class="verify-value">${infoData.timestamp ? new Date(infoData.timestamp).toLocaleString('zh-CN') : new Date().toLocaleString('zh-CN')}</div>
         </div>
       </div>
     `;

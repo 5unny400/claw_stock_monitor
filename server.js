@@ -100,18 +100,20 @@ app.get('/api/stock/:symbol', async (req, res) => {
     }
     
     const d = data.data;
+    const current = d.f43 / 100 || 0;
+    const close = d.f60 / 100 || current;
     const stockData = {
       symbol: symbol,
-      name: d.f58 || symbol,
-      open: d.f46 / 100,
-      close: d.f60 / 100,
-      current: d.f43 / 100,
-      high: d.f48 / 100,
-      low: d.f47 / 100,
-      volume: d.f47,
-      amount: d.f48,
-      change: (d.f43 - d.f60) / 100,
-      changePercent: ((d.f43 - d.f60) / d.f60 * 100).toFixed(2),
+      name: d.f58 || d.f12 || symbol,
+      open: d.f46 / 100 || current,
+      close: close,
+      current: current,
+      high: d.f48 / 100 || current,
+      low: d.f47 / 100 || current,
+      volume: d.f47 || 0,
+      amount: d.f48 || 0,
+      change: (current - close),
+      changePercent: close ? ((current - close) / close * 100).toFixed(2) : '0.00',
       market: d.f169 === 1 ? '沪市' : d.f169 === 2 ? '深市' : d.f169 === 5 ? '港股' : d.f169 === 6 ? '美股' : '其他'
     };
     
@@ -157,17 +159,19 @@ app.get('/api/stocks', async (req, res) => {
         const data = response.data;
         if (data.data && data.data.f43) {
           const d = data.data;
+          const current = d.f43 / 100 || 0;
+          const close = d.f60 / 100 || current;
           results.push({
             symbol: symbol,
             name: d.f58 || d.f12 || symbol,
-            current: d.f43 / 100,
-            close: d.f60 / 100,
-            change: (d.f43 - d.f60) / 100,
-            changePercent: ((d.f43 - d.f60) / d.f60 * 100).toFixed(2),
-            volume: d.f47,
-            amount: d.f48,
-            high: d.f48 / 100,
-            low: d.f47 / 100,
+            current: current,
+            close: close,
+            change: (current - close),
+            changePercent: close ? ((current - close) / close * 100).toFixed(2) : '0.00',
+            volume: d.f47 || 0,
+            amount: d.f48 || 0,
+            high: d.f48 / 100 || current,
+            low: d.f47 / 100 || current,
             time: new Date().toLocaleTimeString('zh-CN')
           });
         }
@@ -209,7 +213,7 @@ app.get('/api/stock/:symbol/info', async (req, res) => {
     
     // 东方财富 API 获取股票信息
     const response = await axios.get(
-      `http://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f44,f45,f46,f47,f48,f49,f50,f51,f52,f57,f58,f60,f169`,
+      `http://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f44,f45,f46,f47,f48,f49,f50,f51,f52,f57,f58,f60,f168,f169`,
       {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -224,23 +228,28 @@ app.get('/api/stock/:symbol/info', async (req, res) => {
       return res.status(404).json({ error: '未找到该股票信息' });
     }
     
-    // 判断市场
-    let market = '未知';
-    if (data.data.f169 === 1) market = '沪市';
-    else if (data.data.f169 === 2) market = '深市';
-    else if (data.data.f169 === 3) market = '北交所';
-    else if (data.data.f169 === 5) market = '港股';
-    else if (data.data.f169 === 6) market = '美股';
+    const d = data.data;
+    
+    // 判断市场 - 使用 f168（市场代码）和 f169
+    let market = 'A 股';
+    if (d.f168 === '116' || d.f169 === 5) market = '港股';
+    else if (d.f168 === '105' || d.f169 === 6) market = '美股';
+    else if (d.f169 === 1) market = '沪市';
+    else if (d.f169 === 2) market = '深市';
+    else if (d.f169 === 3) market = '北交所';
     
     const stockInfo = {
       symbol: symbol.replace(/^(HK|US)/, ''),
-      name: data.data.f58 || data.data.f12 || symbol.replace(/^(HK|US)/, ''),
-      code: data.data.f12 || symbol.replace(/^(HK|US)/, ''),
+      name: d.f58 || d.f12 || symbol.replace(/^(HK|US)/, ''),
+      code: d.f12 || symbol.replace(/^(HK|US)/, ''),
       available: true,
       market: market,
-      current: data.data.f43 / 100,
+      current: (d.f43 || 0) / 100,
+      updateTime: new Date().toLocaleString('zh-CN'),
       timestamp: Date.now()
     };
+    
+    console.log('验票返回:', stockInfo);
     
     res.json(stockInfo);
     
@@ -326,19 +335,25 @@ app.get('/api/search', async (req, res) => {
     const data = response.data;
     const results = [];
     
-    console.log('搜索响应:', JSON.stringify(data).substring(0, 200));
-    
     // 解析搜索结果 - 东方财富返回 QuotationCodeTable.Data
     if (data.QuotationCodeTable && data.QuotationCodeTable.Data) {
       data.QuotationCodeTable.Data.forEach(item => {
         if (item.Code && item.Name) {
           let market = '未知';
-          if (item.MarketType === '1') market = '沪市';
-          else if (item.MarketType === '2') market = '深市';
+          // 根据多种字段判断市场
+          if (item.MarketType === '1' || item.Classify === 'SH') market = '沪市';
+          else if (item.MarketType === '2' || item.Classify === 'SZ') market = '深市';
           else if (item.MarketType === '3') market = '北交所';
-          else if (item.MarketType === '5') market = '港股';
-          else if (item.MarketType === '6') market = '美股';
-          else if (item.JYS === 'HK') market = '港股';
+          else if (item.MarketType === '5' || item.JYS === 'HK' || item.SecurityType === '6') market = '港股';
+          else if (item.MarketType === '6' || item.Classify === 'US') market = '美股';
+          else if (item.Classify === 'HK') market = '港股';
+          else if (item.Classify === 'US') market = '美股';
+          else if (item.JYS === 'US') market = '美股';
+          // 根据代码格式判断
+          else if (/^0\d{4}$/.test(item.Code)) market = '港股';
+          else if (/^[A-Z]{2,6}$/.test(item.Code)) market = '美股';
+          else if (/^(60|68)/.test(item.Code)) market = '沪市';
+          else if (/^(00|30)/.test(item.Code)) market = '深市';
           
           results.push({
             symbol: item.Code,
@@ -349,7 +364,6 @@ app.get('/api/search', async (req, res) => {
       });
     }
     
-    console.log('搜索结果数量:', results.length);
     res.json({ results });
     
   } catch (error) {
