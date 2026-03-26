@@ -1,0 +1,410 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+  color: #333;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+header {
+  text-align: center;
+  color: white;
+  margin-bottom: 30px;
+}
+
+header h1 {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.subtitle {
+  font-size: 1.1em;
+  opacity: 0.9;
+}
+
+section {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+section h2 {
+  color: #667eea;
+  margin-bottom: 20px;
+  font-size: 1.5em;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 10px;
+}
+
+/* 大盘指数 */
+.index-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.index-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* 黄金监控 */
+.gold-card {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  padding: 30px;
+  border-radius: 12px;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.gold-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.gold-name {
+  font-size: 1.8em;
+  font-weight: bold;
+}
+
+.gold-price {
+  font-size: 3em;
+  font-weight: bold;
+}
+
+.gold-change {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.gold-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.gold-detail-item {
+  background: rgba(255,255,255,0.2);
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.gold-detail-label {
+  font-size: 0.85em;
+  opacity: 0.9;
+}
+
+.gold-detail-value {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.gold-actions {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.index-name {
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.index-value {
+  font-size: 1.8em;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.index-change {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.up {
+  color: #e74c3c;
+}
+
+.down {
+  color: #27ae60;
+}
+
+/* 搜索框 */
+.search-box, .add-stock, .verify-box, .alert-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+input[type="text"], input[type="number"], select {
+  flex: 1;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1em;
+  transition: border-color 0.3s;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+button {
+  padding: 12px 25px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* 搜索结果 */
+.search-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.search-item {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.search-item:hover {
+  background: #e9ecef;
+}
+
+.search-item strong {
+  color: #667eea;
+}
+
+/* 自选股 */
+.watchlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.stock-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px;
+  position: relative;
+}
+
+.stock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.stock-name {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #333;
+}
+
+.stock-symbol {
+  color: #888;
+  font-size: 0.9em;
+}
+
+.stock-price {
+  font-size: 2em;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.stock-change {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.stock-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.stock-detail span {
+  display: flex;
+  justify-content: space-between;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #e74c3c;
+  padding: 5px 10px;
+  font-size: 0.8em;
+  border-radius: 5px;
+}
+
+.remove-btn:hover {
+  background: #c0392b;
+}
+
+.watchlist-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn-refresh, .btn-auto {
+  min-width: 150px;
+}
+
+.btn-auto.active {
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+}
+
+/* 验票结果 */
+.verify-result {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+.verify-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.verify-item {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  border-left: 4px solid #667eea;
+}
+
+.verify-label {
+  color: #888;
+  font-size: 0.9em;
+  margin-bottom: 5px;
+}
+
+.verify-value {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 预警列表 */
+.alert-list {
+  margin-top: 15px;
+}
+
+.alert-item {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alert-item.triggered {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+.alert-info {
+  flex: 1;
+}
+
+.alert-delete {
+  background: #e74c3c;
+  padding: 8px 15px;
+  font-size: 0.9em;
+}
+
+/* 空状态提示 */
+.empty-tip {
+  text-align: center;
+  color: #999;
+  padding: 30px;
+  font-style: italic;
+}
+
+/* 加载状态 */
+.loading {
+  text-align: center;
+  padding: 30px;
+  color: #667eea;
+  font-size: 1.2em;
+}
+
+/* 页脚 */
+footer {
+  text-align: center;
+  color: white;
+  margin-top: 30px;
+  opacity: 0.8;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  header h1 {
+    font-size: 1.8em;
+  }
+  
+  .search-box, .add-stock, .verify-box, .alert-form {
+    flex-direction: column;
+  }
+  
+  .watchlist-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .index-grid {
+    grid-template-columns: 1fr;
+  }
+}

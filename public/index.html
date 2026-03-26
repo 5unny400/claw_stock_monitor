@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>股票盯票验票系统</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📈 股票盯票验票系统</h1>
+      <p class="subtitle">实时监控 · 数据验证 · 智能预警</p>
+    </header>
+
+    <!-- 大盘指数 -->
+    <section class="market-index">
+      <h2>📊 大盘指数</h2>
+      <div id="marketData" class="index-grid">
+        <div class="loading">加载中...</div>
+      </div>
+    </section>
+
+    <!-- 搜索股票 -->
+    <section class="search-section">
+      <h2>🔍 搜索股票</h2>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="输入股票代码或名称（如：600519 或 茅台）">
+        <button onclick="searchStock()">搜索</button>
+      </div>
+      <div id="searchResults" class="search-results"></div>
+    </section>
+
+    <!-- 黄金监控 -->
+    <section class="gold-section">
+      <h2>🥇 黄金价格监控</h2>
+      <div id="goldData" class="gold-card">
+        <div class="loading">加载中...</div>
+      </div>
+      <div class="gold-actions">
+        <button onclick="loadGoldPrice()" class="btn-refresh">🔄 刷新金价</button>
+      </div>
+    </section>
+
+    <!-- 自选股监控 -->
+    <section class="watchlist-section">
+      <h2>👁️ 自选股监控</h2>
+      <div class="add-stock">
+        <input type="text" id="stockSymbol" placeholder="输入股票代码（如：600519 或 AU9999）">
+        <button onclick="addStock()">添加</button>
+      </div>
+      <div id="watchlist" class="watchlist-grid">
+        <p class="empty-tip">暂无自选股，添加股票代码开始监控</p>
+      </div>
+      <div class="watchlist-actions">
+        <button onclick="refreshAll()" class="btn-refresh">🔄 刷新全部</button>
+        <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="btn-auto">▶️ 自动刷新：关</button>
+      </div>
+    </section>
+
+    <!-- 验票功能 -->
+    <section class="verify-section">
+      <h2>✅ 验票</h2>
+      <div class="verify-box">
+        <input type="text" id="verifySymbol" placeholder="输入股票代码进行验证">
+        <button onclick="verifyStock()">验证</button>
+      </div>
+      <div id="verifyResult" class="verify-result"></div>
+    </section>
+
+    <!-- 预警设置 -->
+    <section class="alert-section">
+      <h2>🔔 价格预警</h2>
+      <div class="alert-form">
+        <input type="text" id="alertSymbol" placeholder="股票代码">
+        <input type="number" id="alertPrice" placeholder="预警价格" step="0.01">
+        <select id="alertType">
+          <option value="above">高于</option>
+          <option value="below">低于</option>
+        </select>
+        <button onclick="addAlert()">设置预警</button>
+      </div>
+      <div id="alertList" class="alert-list">
+        <p class="empty-tip">暂无预警设置</p>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <p>数据来源：新浪财经 | 更新时间：<span id="updateTime">--:--:--</span></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
