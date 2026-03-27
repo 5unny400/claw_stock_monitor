@@ -220,6 +220,7 @@ async function renderWatchlist() {
     container.innerHTML = stocks.map(stock => `
       <div class="stock-card">
         <button class="remove-btn" onclick="removeStock('${stock.symbol}')">✕</button>
+        <button class="kline-btn" onclick="openKlineModal('${stock.symbol}')">📊 K 线</button>
         <div class="stock-header">
           <span class="stock-name">${stock.name}</span>
           <span class="stock-symbol">${stock.symbol}</span>

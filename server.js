@@ -526,6 +526,129 @@ app.get('/api/gold', async (req, res) => {
   });
 });
 
+// K 线周期映射
+const KLINE_PERIOD_MAP = {
+  'day': 101,      // 日 K
+  'week': 102,     // 周 K
+  'month': 103,    // 月 K
+  '60min': 60,     // 60 分钟 K
+  '30min': 30,     // 30 分钟 K
+  '15min': 15,     // 15 分钟 K
+  '5min': 5,       // 5 分钟 K
+  '1min': 1        // 1 分钟 K
+};
+
+// 获取 K 线数据 API
+app.get('/api/kline', async (req, res) => {
+  try {
+    const { symbol, period = 'day', market = 'auto' } = req.query;
+    
+    if (!symbol) {
+      return res.status(400).json({ error: '请提供股票代码' });
+    }
+    
+    // 确定市场 ID
+    let secid = symbol;
+    if (market === 'auto') {
+      if (/^(60|68)/.test(symbol)) secid = `1.${symbol}`;      // 沪市
+      else if (/^(00|30)/.test(symbol)) secid = `0.${symbol}`;  // 深市
+      else if (/^[48]/.test(symbol)) secid = `2.${symbol}`;     // 北交所
+      else if (/^0\d{4}$/.test(symbol)) secid = `116.${symbol}`; // 港股
+      else if (/^[A-Z]{2,6}$/.test(symbol)) secid = `105.${symbol}`; // 美股
+    } else if (market === 'sh') {
+      secid = `1.${symbol}`;
+    } else if (market === 'sz') {
+      secid = `0.${symbol}`;
+    } else if (market === 'hk') {
+      secid = `116.${symbol}`;
+    } else if (market === 'us') {
+      secid = `105.${symbol}`;
+    }
+    
+    // 获取 K 线类型
+    const klt = KLINE_PERIOD_MAP[period] || 101;
+    
+    // 计算日期范围（根据周期调整）
+    const now = new Date();
+    let begDate, endDate;
+    endDate = now.toISOString().split('T')[0].replace(/-/g, '');
+    
+    if (period === 'day') {
+      // 日 K：近 2 年
+      const beg = new Date();
+      beg.setFullYear(beg.getFullYear() - 2);
+      begDate = beg.toISOString().split('T')[0].replace(/-/g, '');
+    } else if (period === 'week') {
+      // 周 K：近 5 年
+      const beg = new Date();
+      beg.setFullYear(beg.getFullYear() - 5);
+      begDate = beg.toISOString().split('T')[0].replace(/-/g, '');
+    } else if (period === 'month') {
+      // 月 K：近 10 年
+      const beg = new Date();
+      beg.setFullYear(beg.getFullYear() - 10);
+      begDate = beg.toISOString().split('T')[0].replace(/-/g, '');
+    } else {
+      // 分钟 K：近 30 天
+      const beg = new Date();
+      beg.setDate(beg.getDate() - 30);
+      begDate = beg.toISOString().split('T')[0].replace(/-/g, '');
+    }
+    
+    // 东方财富 K 线 API
+    const url = `http://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${secid}&klt=${klt}&fqt=1&beg=${begDate}&end=${endDate}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60`;
+    
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'http://quote.eastmoney.com/'
+      },
+      timeout: 10000
+    });
+    
+    const data = response.data;
+    
+    if (!data.data || !data.data.klines || data.data.klines.length === 0) {
+      return res.json({
+        symbol,
+        period,
+        klines: []
+      });
+    }
+    
+    // 解析 K 线数据
+    const klines = data.data.klines.map(kline => {
+      const parts = kline.split(',');
+      return {
+        time: parts[0],                    // 日期
+        open: parseFloat(parts[1]),        // 开盘价
+        close: parseFloat(parts[2]),       // 收盘价
+        high: parseFloat(parts[3]),        // 最高价
+        low: parseFloat(parts[4]),         // 最低价
+        volume: parseFloat(parts[5]) || 0, // 成交量
+        amount: parseFloat(parts[6]) || 0, // 成交额
+        amplitude: parseFloat(parts[7]) || 0, // 振幅
+        changeRate: parseFloat(parts[8]) || 0, // 涨跌幅
+        changeValue: parseFloat(parts[9]) || 0 // 涨跌额
+      };
+    });
+    
+    res.json({
+      symbol,
+      name: data.data.name || symbol,
+      period,
+      klines
+    });
+    
+  } catch (error) {
+    console.error('获取 K 线数据失败:', error.message);
+    res.status(500).json({ 
+      error: '获取 K 线数据失败', 
+      message: error.message 
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`📈 股票盯票验票系统已启动`);
   console.log(`🌐 访问地址：http://localhost:${PORT}`);

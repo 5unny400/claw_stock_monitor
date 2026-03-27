@@ -409,3 +409,165 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+/* K 线图弹窗 */
+.kline-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.kline-modal-content {
+  background: #1a1a2e;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.kline-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #2B2B43;
+}
+
+.kline-modal-header h3 {
+  color: #d1d4dc;
+  font-size: 1.5em;
+  margin: 0;
+}
+
+.kline-close {
+  background: transparent;
+  color: #d1d4dc;
+  font-size: 2em;
+  padding: 0 10px;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.kline-close:hover {
+  color: #ef5350;
+  transform: none;
+  box-shadow: none;
+}
+
+.kline-controls {
+  padding: 15px 20px;
+  border-bottom: 1px solid #2B2B43;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.kline-periods {
+  display: flex;
+  gap: 10px;
+}
+
+.period-btn {
+  background: #2B2B43;
+  color: #d1d4dc;
+  border: 1px solid #3a3a5a;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9em;
+}
+
+.period-btn:hover {
+  background: #3a3a5a;
+  transform: none;
+  box-shadow: none;
+}
+
+.period-btn.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.kline-indicators {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.kline-indicators label {
+  color: #d1d4dc;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9em;
+}
+
+.kline-indicators input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.kline-chart {
+  width: 100%;
+  height: 500px;
+  padding: 10px;
+}
+
+.kline-loading {
+  text-align: center;
+  padding: 50px;
+  color: #d1d4dc;
+  font-size: 1.2em;
+}
+
+/* K 线按钮 */
+.kline-btn {
+  position: absolute;
+  top: 15px;
+  right: 50px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 5px 12px;
+  font-size: 0.8em;
+  border-radius: 5px;
+}
+
+.kline-btn:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* 响应式 K 线弹窗 */
+@media (max-width: 768px) {
+  .kline-modal-content {
+    width: 95%;
+  }
+  
+  .kline-controls {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .kline-periods {
+    flex-wrap: wrap;
+  }
+  
+  .kline-indicators {
+    flex-wrap: wrap;
+  }
+  
+  .kline-chart {
+    height: 400px;
+  }
+}

@@ -86,10 +86,37 @@
     </section>
   </div>
 
+  <!-- K 线图弹窗 -->
+  <div id="klineModal" class="kline-modal" style="display: none;">
+    <div class="kline-modal-content">
+      <div class="kline-modal-header">
+        <h3 id="klineTitle">K 线图</h3>
+        <button class="kline-close" onclick="closeKlineModal()">×</button>
+      </div>
+      <div class="kline-controls">
+        <div class="kline-periods">
+          <button class="period-btn active" data-period="day">日 K</button>
+          <button class="period-btn" data-period="week">周 K</button>
+          <button class="period-btn" data-period="month">月 K</button>
+          <button class="period-btn" data-period="60min">60 分钟</button>
+        </div>
+        <div class="kline-indicators">
+          <label><input type="checkbox" id="ma5Check" checked> MA5</label>
+          <label><input type="checkbox" id="ma10Check" checked> MA10</label>
+          <label><input type="checkbox" id="ma20Check" checked> MA20</label>
+          <label><input type="checkbox" id="volCheck" checked> VOL</label>
+        </div>
+      </div>
+      <div id="klineChart" class="kline-chart"></div>
+      <div id="klineLoading" class="kline-loading" style="display: none;">加载中...</div>
+    </div>
+  </div>
+
   <footer>
     <p>数据来源：新浪财经 | 更新时间：<span id="updateTime">--:--:--</span></p>
   </footer>
 
+  <script type="module" src="kline-chart.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
