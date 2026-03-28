@@ -40,6 +40,13 @@ function initKlineChart() {
       secondsVisible: false,
       visible: false, // 隐藏时间轴滑块
     },
+    rightPriceScale: {
+      borderColor: '#2B2B43',
+      scaleMargins: {
+        top: 0.1,  // 顶部留白 10%
+        bottom: 0.2, // 底部留白 20%（给成交量）
+      },
+    },
   });
 
   // 创建 K 线系列
