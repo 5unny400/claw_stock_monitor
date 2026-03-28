@@ -16,8 +16,8 @@ function initKlineChart() {
   if (!chartContainer) return;
 
   // 获取容器实际尺寸
-  const width = chartContainer.clientWidth - 60; // 减去左右 padding
-  const height = chartContainer.clientHeight - 100; // 减去上下 padding（底部留更多空间给成交量）
+  const width = chartContainer.clientWidth - 90; // 减去左右 padding 和价格轴空间
+  const height = chartContainer.clientHeight - 130; // 减去上下 padding 和时间轴空间
 
   // 创建图表
   chart = LightweightCharts.createChart(chartContainer, {
@@ -42,6 +42,7 @@ function initKlineChart() {
     },
     rightPriceScale: {
       borderColor: '#2B2B43',
+      mode: LightweightCharts.PriceScaleMode.Normal,
       scaleMargins: {
         top: 0.1,  // 顶部留白 10%
         bottom: 0.3, // 底部留白 30%（给成交量）

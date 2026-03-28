@@ -566,7 +566,7 @@ footer {
 .kline-chart {
   width: 100%;
   height: 700px;
-  padding: 20px 40px 80px 20px; /* 上右下左，底部留更多空间给成交量 */
+  padding: 30px 60px 100px 30px; /* 上右下左，右侧和底部留更多空间给坐标轴 */
 }
 
 .kline-loading {
