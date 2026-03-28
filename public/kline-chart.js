@@ -16,8 +16,8 @@ function initKlineChart() {
   if (!chartContainer) return;
 
   // 获取容器实际尺寸
-  const width = chartContainer.clientWidth - 40; // 减去左右 padding
-  const height = chartContainer.clientHeight - 40; // 减去上下 padding
+  const width = chartContainer.clientWidth - 70; // 减去左右 padding (20px+50px)
+  const height = chartContainer.clientHeight - 70; // 减去上下 padding (20px+50px)
 
   // 创建图表
   chart = LightweightCharts.createChart(chartContainer, {
