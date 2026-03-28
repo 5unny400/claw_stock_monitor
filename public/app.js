@@ -91,54 +91,12 @@ async function loadMarketIndex() {
   }
 }
 
-// 搜索股票
-async function searchStock() {
-  const keyword = document.getElementById('searchInput').value.trim();
-  if (!keyword) {
-    alert('请输入股票代码或名称');
-    return;
-  }
-  
-  const resultsDiv = document.getElementById('searchResults');
-  resultsDiv.innerHTML = '<div class="loading">搜索中...</div>';
-  
-  try {
-    const response = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`);
-    const data = await response.json();
-    
-    if (data.results.length === 0) {
-      resultsDiv.innerHTML = '<div class="empty-tip">未找到相关股票</div>';
-      return;
-    }
-    
-    resultsDiv.innerHTML = data.results.map(stock => {
-      // 根据市场添加前缀
-      let displaySymbol = stock.symbol;
-      if (stock.market === '港股') {
-        displaySymbol = `HK${stock.symbol}`;
-      } else if (stock.market === '美股') {
-        displaySymbol = `US${stock.symbol}`;
-      }
-      return `
-        <div class="search-item" onclick="addStockBySymbol('${displaySymbol}', '${stock.name}')">
-          <strong>${stock.name}</strong> (${stock.symbol})<br>
-          <small>${stock.market}</small>
-        </div>
-      `;
-    }).join('');
-  } catch (error) {
-    resultsDiv.innerHTML = '<div class="empty-tip">搜索失败</div>';
-  }
-}
-
 // 添加股票到自选
 function addStockBySymbol(symbol, name) {
   // 存储股票信息
   window.pendingStock = { symbol, name };
   document.getElementById('stockSymbol').value = symbol;
   addStock();
-  document.getElementById('searchResults').innerHTML = '';
-  document.getElementById('searchInput').value = '';
 }
 
 // 添加自选股
@@ -532,11 +490,6 @@ function checkAlerts(stocks) {
     });
   });
 }
-
-// 回车搜索
-document.getElementById('searchInput').addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') searchStock();
-});
 
 document.getElementById('stockSymbol').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') addStock();
