@@ -16,8 +16,8 @@ function initKlineChart() {
   if (!chartContainer) return;
 
   // 获取容器实际尺寸
-  const width = chartContainer.clientWidth - 130; // 减去左右 padding 和价格轴空间
-  const height = chartContainer.clientHeight - 130; // 减去上下 padding 和时间轴空间
+  const width = chartContainer.clientWidth - 100; // 右侧留 80px 给价格轴 +20px 余量
+  const height = chartContainer.clientHeight - 50; // 底部留 30px 给时间轴 +20px 余量
 
   // 创建图表
   chart = LightweightCharts.createChart(chartContainer, {
@@ -38,14 +38,14 @@ function initKlineChart() {
       borderColor: '#2B2B43',
       timeVisible: true,
       secondsVisible: false,
-      visible: false, // 隐藏时间轴滑块
+      visible: true, // 显示时间轴
     },
     rightPriceScale: {
       borderColor: '#2B2B43',
       mode: LightweightCharts.PriceScaleMode.Normal,
       scaleMargins: {
         top: 0.1,  // 顶部留白 10%
-        bottom: 0.3, // 底部留白 30%（给成交量）
+        bottom: 0.25, // 底部留白 25%（给成交量）
       },
     },
   });
@@ -70,8 +70,8 @@ function initKlineChart() {
 
   volumeSeries.priceScale().applyOptions({
     scaleMargins: {
-      top: 0.9,  // 成交量只占底部 10%
-      bottom: 0.1, // 底部留白，不贴边
+      top: 0.85,  // 成交量占底部 15%
+      bottom: 0,
     },
   });
 
