@@ -43,8 +43,8 @@ function initKlineChart() {
     rightPriceScale: {
       borderColor: '#2B2B43',
       scaleMargins: {
-        top: 0.1,  // 顶部留白 10%
-        bottom: 0.2, // 底部留白 20%（给成交量）
+        top: 0.15,  // 顶部留白 15%
+        bottom: 0.25, // 底部留白 25%（给成交量）
       },
     },
   });
