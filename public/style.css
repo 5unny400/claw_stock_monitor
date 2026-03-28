@@ -312,6 +312,28 @@ button:active {
   transform: translateY(-2px);
 }
 
+/* 黄金行情来源按钮 */
+.btn-source {
+  display: inline-block;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  min-width: 150px;
+  text-align: center;
+}
+
+.btn-source:hover {
+  background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+}
+
 /* 验票结果 */
 .verify-result {
   background: #f8f9fa;
