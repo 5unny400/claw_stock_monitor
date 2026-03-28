@@ -399,7 +399,7 @@ async function loadFinancials(symbol) {
     
     // 格式化大数字（亿）
     const formatBillion = (num) => {
-      if (num === null || num === undefined || isNaN(num)) return 'N/A';
+      if (num === null || num === undefined || isNaN(num) || num === 0) return '--';
       return num >= 10000 ? `${(num / 10000).toFixed(2)}万亿` : `${num.toFixed(2)}亿`;
     };
 
@@ -409,19 +409,19 @@ async function loadFinancials(symbol) {
           <h4>📊 每股指标</h4>
           <div class="financials-item">
             <span class="financials-label">每股收益 (EPS)</span>
-            <span class="financials-value">${f.eps.toFixed(2)}元</span>
+            <span class="financials-value">${f.eps > 0 ? f.eps.toFixed(2) : '--'}元</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">每股净资产</span>
-            <span class="financials-value">${f.bvps.toFixed(2)}元</span>
+            <span class="financials-value">${f.bvps > 0 ? f.bvps.toFixed(2) : '--'}元</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">每股现金流</span>
-            <span class="financials-value">${f.cfps.toFixed(2)}元</span>
+            <span class="financials-value">${f.cfps > 0 ? f.cfps.toFixed(2) : '--'}元</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">每股分红</span>
-            <span class="financials-value">${f.dividend.toFixed(2)}元</span>
+            <span class="financials-value">${f.dividend > 0 ? f.dividend.toFixed(2) : '--'}元</span>
           </div>
         </div>
         
@@ -429,19 +429,19 @@ async function loadFinancials(symbol) {
           <h4>💰 估值指标</h4>
           <div class="financials-item">
             <span class="financials-label">市盈率 (PE)</span>
-            <span class="financials-value">${f.pe > 0 ? f.pe.toFixed(2) : 'N/A'}</span>
+            <span class="financials-value">${f.pe > 0 ? f.pe.toFixed(2) : '--'}</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">市净率 (PB)</span>
-            <span class="financials-value">${f.pb > 0 ? f.pb.toFixed(2) : 'N/A'}</span>
+            <span class="financials-value">${f.pb > 0 ? f.pb.toFixed(2) : '--'}</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">市销率 (PS)</span>
-            <span class="financials-value">${f.ps > 0 ? f.ps.toFixed(2) : 'N/A'}</span>
+            <span class="financials-value">${f.ps > 0 ? f.ps.toFixed(2) : '--'}</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">股息率</span>
-            <span class="financials-value">${f.dividendYield > 0 ? f.dividendYield.toFixed(2) + '%' : 'N/A'}</span>
+            <span class="financials-value">${f.dividendYield > 0 ? f.dividendYield.toFixed(2) + '%' : '--'}</span>
           </div>
         </div>
         
@@ -449,19 +449,19 @@ async function loadFinancials(symbol) {
           <h4>📈 盈利能力</h4>
           <div class="financials-item">
             <span class="financials-label">净资产收益率 (ROE)</span>
-            <span class="financials-value">${f.roe.toFixed(2)}%</span>
+            <span class="financials-value">${f.roe > 0 ? f.roe.toFixed(2) : '--'}%</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">总资产收益率 (ROA)</span>
-            <span class="financials-value">${f.roa.toFixed(2)}%</span>
+            <span class="financials-value">${f.roa > 0 ? f.roa.toFixed(2) : '--'}%</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">销售毛利率</span>
-            <span class="financials-value">${f.grossMargin.toFixed(2)}%</span>
+            <span class="financials-value">${f.grossMargin > 0 ? f.grossMargin.toFixed(2) : '--'}%</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">销售净利率</span>
-            <span class="financials-value">${f.netMargin.toFixed(2)}%</span>
+            <span class="financials-value">${f.netMargin > 0 ? f.netMargin.toFixed(2) : '--'}%</span>
           </div>
         </div>
         
@@ -469,11 +469,11 @@ async function loadFinancials(symbol) {
           <h4>🚀 成长能力</h4>
           <div class="financials-item">
             <span class="financials-label">营收增长率</span>
-            <span class="financials-value ${f.revenueGrowth > 0 ? 'up' : 'down'}">${f.revenueGrowth.toFixed(2)}%</span>
+            <span class="financials-value ${f.revenueGrowth !== 0 ? (f.revenueGrowth > 0 ? 'up' : 'down') : ''}">${f.revenueGrowth !== 0 ? f.revenueGrowth.toFixed(2) : '--'}%</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">净利润增长率</span>
-            <span class="financials-value ${f.profitGrowth > 0 ? 'up' : 'down'}">${f.profitGrowth.toFixed(2)}%</span>
+            <span class="financials-value ${f.profitGrowth !== 0 ? (f.profitGrowth > 0 ? 'up' : 'down') : ''}">${f.profitGrowth !== 0 ? f.profitGrowth.toFixed(2) : '--'}%</span>
           </div>
         </div>
         
@@ -481,11 +481,11 @@ async function loadFinancials(symbol) {
           <h4>🛡️ 偿债能力</h4>
           <div class="financials-item">
             <span class="financials-label">资产负债率</span>
-            <span class="financials-value">${f.debtRatio.toFixed(2)}%</span>
+            <span class="financials-value">${f.debtRatio > 0 ? f.debtRatio.toFixed(2) : '--'}%</span>
           </div>
           <div class="financials-item">
             <span class="financials-label">流动比率</span>
-            <span class="financials-value">${f.currentRatio.toFixed(2)}</span>
+            <span class="financials-value">${f.currentRatio > 0 ? f.currentRatio.toFixed(2) : '--'}</span>
           </div>
         </div>
         
