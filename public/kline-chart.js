@@ -15,10 +15,14 @@ function initKlineChart() {
   const chartContainer = document.getElementById('klineChart');
   if (!chartContainer) return;
 
+  // 获取容器实际尺寸
+  const width = chartContainer.clientWidth;
+  const height = chartContainer.clientHeight || 500;
+
   // 创建图表
   chart = LightweightCharts.createChart(chartContainer, {
-    width: chartContainer.clientWidth,
-    height: 500,
+    width: width,
+    height: height,
     layout: {
       background: { color: '#1a1a2e' },
       textColor: '#d1d4dc',
@@ -187,16 +191,30 @@ async function loadKlineData(symbol, period = 'day') {
         });
       }
     } else {
+      let filteredCount = 0;
       candleData = data.klines
         .map(k => {
-          // 分钟 K 线保留完整时间（带时分），日/周/月 K 只取日期
-          let time = k.time;
-          if (!period.includes('min')) {
-            time = k.time.split(' ')[0]; // 只取日期部分
+          // 分钟 K 线使用 Unix 时间戳（秒），日/周/月 K 使用日期字符串
+          let time;
+          if (period.includes('min')) {
+            // 分钟 K：转换为 Unix 时间戳（秒）
+            const dateObj = new Date(k.time.replace(' ', 'T'));
+            if (isNaN(dateObj.getTime())) {
+              filteredCount++;
+              return null;
+            }
+            time = Math.floor(dateObj.getTime() / 1000);
+          } else {
+            // 日/周/月 K：只取日期部分（字符串格式）
+            time = k.time.split(' ')[0];
           }
           
           // 过滤无效数据
           if (isNaN(k.open) || isNaN(k.close) || k.open === 0 || k.close === 0) {
+            filteredCount++;
+            if (filteredCount <= 3) {
+              console.warn(`过滤无效数据：time=${k.time}, open=${k.open}, close=${k.close}`);
+            }
             return null;
           }
           
@@ -209,6 +227,10 @@ async function loadKlineData(symbol, period = 'day') {
           };
         })
         .filter(k => k !== null); // 过滤无效数据
+      
+      if (filteredCount > 0) {
+        console.log(`数据过滤：原始${data.klines.length}条，过滤${filteredCount}条，剩余${candleData.length}条`);
+      }
     }
 
     console.log('转换后 K 线数据:', candleData.length, '条，示例:', candleData[0]);
@@ -216,8 +238,15 @@ async function loadKlineData(symbol, period = 'day') {
     // 成交量数据（红色表示涨，绿色表示跌）
     const volumeData = data.klines
       .map(k => {
-        let time = k.time;
-        if (!period.includes('min')) {
+        // 分钟 K 使用 Unix 时间戳，日/周/月 K 使用日期字符串
+        let time;
+        if (period.includes('min')) {
+          const dateObj = new Date(k.time.replace(' ', 'T'));
+          if (isNaN(dateObj.getTime())) {
+            return null;
+          }
+          time = Math.floor(dateObj.getTime() / 1000);
+        } else {
           time = k.time.split(' ')[0];
         }
         
@@ -311,7 +340,7 @@ function getPeriodName(period) {
 }
 
 // 打开 K 线弹窗
-window.openKlineModal = function(symbol) {
+window.openKlineModal = function(symbol, initialPeriod = 'day') {
   const modal = document.getElementById('klineModal');
   if (!modal) return;
 
@@ -326,9 +355,11 @@ window.openKlineModal = function(symbol) {
     if (!chart) {
       console.log('初始化 K 线图表...');
       initKlineChart();
-    } else {
-      // 如果图表已存在，确保尺寸正确
-      console.log('图表已存在，调整尺寸...');
+    }
+    
+    // 强制重新调整图表尺寸（解决首次加载时容器尺寸为 0 的问题）
+    if (chart) {
+      console.log('调整图表尺寸，容器:', chartContainer.clientWidth, 'x', chartContainer.clientHeight);
       chart.applyOptions({
         width: chartContainer.clientWidth,
         height: chartContainer.clientHeight,
@@ -336,9 +367,9 @@ window.openKlineModal = function(symbol) {
     }
     
     // 加载数据
-    console.log('开始加载 K 线数据，股票代码:', symbol);
-    loadKlineData(symbol, 'day');
-  }, 200);
+    console.log('开始加载 K 线数据，股票代码:', symbol, '周期:', initialPeriod);
+    loadKlineData(symbol, initialPeriod);
+  }, 300); // 增加延迟到 300ms，确保弹窗完全渲染
 
   // 绑定周期切换事件
   document.querySelectorAll('.period-btn').forEach(btn => {
