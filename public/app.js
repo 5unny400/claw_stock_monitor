@@ -304,12 +304,26 @@ async function cleanupInvalidStocks() {
       return;
     }
     
-    const confirmRemove = confirm(`发现 ${invalidSymbols.length} 只无效股票：\n${invalidSymbols.join(', ')}\n\n确定要移除这些股票吗？`);
+    // 为无效股票构建显示列表（逐个获取名称）
+    const invalidDetails = await Promise.all(invalidSymbols.map(async (code) => {
+      try {
+        const res = await fetch(`/api/stock/${code}/info`);
+        const data = await res.json();
+        return { code, name: data.name || '未知', valid: !data.error };
+      } catch (e) {
+        return { code, name: '未知', valid: false };
+      }
+    }));
+    
+    const invalidListText = invalidDetails.map(d => `• ${d.name} (${d.code})`).join('\n');
+    const trulyInvalid = invalidDetails.filter(d => !d.valid).map(d => d.code);
+    
+    const confirmRemove = confirm(`发现 ${trulyInvalid.length} 只无效股票（无法获取数据）：\n\n${invalidListText}\n\n确定要移除这些股票吗？`);
     if (confirmRemove) {
-      watchlist = watchlist.filter(s => !invalidSymbols.includes(s));
+      watchlist = watchlist.filter(s => !trulyInvalid.includes(s));
       localStorage.setItem('watchlist', JSON.stringify(watchlist));
       renderWatchlist();
-      alert(`✅ 清理完成！移除了 ${invalidSymbols.length} 只无效股票，剩余 ${watchlist.length} 只。`);
+      alert(`✅ 清理完成！移除了 ${trulyInvalid.length} 只无效股票，剩余 ${watchlist.length} 只。`);
     }
   } catch (error) {
     alert('检查失败，请稍后重试：' + error.message);
