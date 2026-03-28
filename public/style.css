@@ -592,6 +592,107 @@ footer {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
+/* K 线标签页 */
+.kline-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.kline-tab {
+  background: #2B2B43;
+  color: #d1d4dc;
+  border: 1px solid #3a3a5a;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.kline-tab:hover {
+  background: #3a3a5a;
+}
+
+.kline-tab.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+/* 财报数据面板 */
+.kline-financials {
+  padding: 20px;
+  max-height: 700px;
+  overflow-y: auto;
+}
+
+.financials-content {
+  color: #d1d4dc;
+}
+
+.financials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.financials-section {
+  background: #2B2B43;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #3a3a5a;
+}
+
+.financials-section h4 {
+  color: #667eea;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+  border-bottom: 2px solid #3a3a5a;
+  padding-bottom: 10px;
+}
+
+.financials-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #3a3a5a;
+}
+
+.financials-item:last-child {
+  border-bottom: none;
+}
+
+.financials-label {
+  color: #a0a0a0;
+  font-size: 0.95em;
+}
+
+.financials-value {
+  color: #d1d4dc;
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.financials-value.up {
+  color: #ef5350;
+}
+
+.financials-value.down {
+  color: #26a69a;
+}
+
+.financials-footer {
+  text-align: center;
+  padding: 15px;
+  color: #888;
+  font-size: 0.9em;
+  border-top: 1px solid #3a3a5a;
+}
+
 /* 响应式 K 线弹窗 */
 @media (max-width: 768px) {
   .kline-modal-content {
@@ -613,5 +714,9 @@ footer {
   
   .kline-chart {
     height: 600px;
+  }
+  
+  .financials-grid {
+    grid-template-columns: 1fr;
   }
 }

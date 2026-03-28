@@ -685,6 +685,103 @@ app.get('/api/kline', async (req, res) => {
   }
 });
 
+// 获取财报数据 API
+app.get('/api/financials', async (req, res) => {
+  try {
+    const { symbol, market = 'auto' } = req.query;
+    
+    if (!symbol) {
+      return res.status(400).json({ error: '请提供股票代码' });
+    }
+    
+    // 确定市场 ID
+    let secid = symbol;
+    if (market === 'auto') {
+      if (/^(60|68)/.test(symbol)) secid = `1.${symbol}`;      // 沪市
+      else if (/^(00|30)/.test(symbol)) secid = `0.${symbol}`;  // 深市
+      else if (/^[48]/.test(symbol)) secid = `2.${symbol}`;     // 北交所
+      else if (/^0\d{4}$/.test(symbol)) secid = `116.${symbol}`; // 港股
+      else if (/^[A-Z]{2,6}$/.test(symbol)) secid = `105.${symbol}`; // 美股
+    } else if (market === 'sh') {
+      secid = `1.${symbol}`;
+    } else if (market === 'sz') {
+      secid = `0.${symbol}`;
+    } else if (market === 'hk') {
+      secid = `116.${symbol}`;
+    } else if (market === 'us') {
+      secid = `105.${symbol}`;
+    }
+    
+    // 东方财富财报 API - 获取主要财务指标
+    const url = `http://push2his.eastmoney.com/api/qt/stock/ffield/get?secid=${secid}&fields=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18,f19,f20,f21,f22,f23,f24,f25,f26`;
+    
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'http://quote.eastmoney.com/'
+      },
+      timeout: 10000
+    });
+    
+    const data = response.data;
+    
+    if (!data.data) {
+      return res.json({
+        symbol,
+        name: symbol,
+        financials: null,
+        message: '暂无财报数据'
+      });
+    }
+    
+    const f = data.data;
+    
+    // 解析财报数据
+    const financials = {
+      // 基本每股指标
+      eps: f.f10 || 0,              // 每股收益
+      bvps: f.f11 || 0,             // 每股净资产
+      cfps: f.f12 || 0,             // 每股现金流
+      // 估值指标
+      pe: f.f9 || 0,                // 市盈率（动态）
+      pb: f.f13 || 0,               // 市净率
+      ps: f.f14 || 0,               // 市销率
+      // 盈利能力
+      roe: f.f15 || 0,              // 净资产收益率
+      roa: f.f16 || 0,              // 总资产收益率
+      grossMargin: f.f17 || 0,      // 销售毛利率
+      netMargin: f.f18 || 0,        // 销售净利率
+      // 成长能力
+      revenueGrowth: f.f19 || 0,    // 营收增长率
+      profitGrowth: f.f20 || 0,     // 净利润增长率
+      // 偿债能力
+      debtRatio: f.f21 || 0,        // 资产负债率
+      currentRatio: f.f22 || 0,     // 流动比率
+      // 规模指标
+      totalRevenue: f.f23 || 0,     // 营业总收入（亿）
+      netProfit: f.f24 || 0,        // 净利润（亿）
+      totalAssets: f.f25 || 0,      // 总资产（亿）
+      // 其他
+      dividendYield: f.f26 || 0,    // 股息率
+      dividend: f.f8 || 0,          // 每股分红
+    };
+    
+    res.json({
+      symbol,
+      name: f.f1 || symbol,
+      financials,
+      updateTime: new Date().toLocaleString('zh-CN')
+    });
+    
+  } catch (error) {
+    console.error('获取财报数据失败:', error.message);
+    res.status(500).json({ 
+      error: '获取财报数据失败', 
+      message: error.message 
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log('[Stock Monitor] Server started');
   console.log(`[Stock Monitor] URL: http://localhost:${PORT}`);

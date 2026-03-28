@@ -366,6 +366,158 @@ function getPeriodName(period) {
   return names[period] || period;
 }
 
+// 加载财报数据
+async function loadFinancials(symbol) {
+  const loadingEl = document.getElementById('financialsLoading');
+  const contentEl = document.getElementById('financialsContent');
+  
+  if (loadingEl) loadingEl.style.display = 'block';
+  if (contentEl) contentEl.innerHTML = '';
+
+  try {
+    // 确定市场
+    let market = 'auto';
+    if (/^(60|68)/.test(symbol)) market = 'sh';
+    else if (/^(00|30)/.test(symbol)) market = 'sz';
+    else if (/^0\d{4}$/.test(symbol)) market = 'hk';
+    else if (/^[A-Z]{2,6}$/.test(symbol)) market = 'us';
+
+    const response = await fetch(`/api/financials?symbol=${symbol}&market=${market}`);
+    const data = await response.json();
+
+    if (data.error) {
+      contentEl.innerHTML = `<div class="empty-tip">加载失败：${data.error}</div>`;
+      return;
+    }
+
+    if (!data.financials) {
+      contentEl.innerHTML = `<div class="empty-tip">暂无财报数据</div>`;
+      return;
+    }
+
+    const f = data.financials;
+    
+    // 格式化大数字（亿）
+    const formatBillion = (num) => {
+      if (num === null || num === undefined || isNaN(num)) return 'N/A';
+      return num >= 10000 ? `${(num / 10000).toFixed(2)}万亿` : `${num.toFixed(2)}亿`;
+    };
+
+    contentEl.innerHTML = `
+      <div class="financials-grid">
+        <div class="financials-section">
+          <h4>📊 每股指标</h4>
+          <div class="financials-item">
+            <span class="financials-label">每股收益 (EPS)</span>
+            <span class="financials-value">${f.eps.toFixed(2)}元</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">每股净资产</span>
+            <span class="financials-value">${f.bvps.toFixed(2)}元</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">每股现金流</span>
+            <span class="financials-value">${f.cfps.toFixed(2)}元</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">每股分红</span>
+            <span class="financials-value">${f.dividend.toFixed(2)}元</span>
+          </div>
+        </div>
+        
+        <div class="financials-section">
+          <h4>💰 估值指标</h4>
+          <div class="financials-item">
+            <span class="financials-label">市盈率 (PE)</span>
+            <span class="financials-value">${f.pe > 0 ? f.pe.toFixed(2) : 'N/A'}</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">市净率 (PB)</span>
+            <span class="financials-value">${f.pb > 0 ? f.pb.toFixed(2) : 'N/A'}</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">市销率 (PS)</span>
+            <span class="financials-value">${f.ps > 0 ? f.ps.toFixed(2) : 'N/A'}</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">股息率</span>
+            <span class="financials-value">${f.dividendYield > 0 ? f.dividendYield.toFixed(2) + '%' : 'N/A'}</span>
+          </div>
+        </div>
+        
+        <div class="financials-section">
+          <h4>📈 盈利能力</h4>
+          <div class="financials-item">
+            <span class="financials-label">净资产收益率 (ROE)</span>
+            <span class="financials-value">${f.roe.toFixed(2)}%</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">总资产收益率 (ROA)</span>
+            <span class="financials-value">${f.roa.toFixed(2)}%</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">销售毛利率</span>
+            <span class="financials-value">${f.grossMargin.toFixed(2)}%</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">销售净利率</span>
+            <span class="financials-value">${f.netMargin.toFixed(2)}%</span>
+          </div>
+        </div>
+        
+        <div class="financials-section">
+          <h4>🚀 成长能力</h4>
+          <div class="financials-item">
+            <span class="financials-label">营收增长率</span>
+            <span class="financials-value ${f.revenueGrowth > 0 ? 'up' : 'down'}">${f.revenueGrowth.toFixed(2)}%</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">净利润增长率</span>
+            <span class="financials-value ${f.profitGrowth > 0 ? 'up' : 'down'}">${f.profitGrowth.toFixed(2)}%</span>
+          </div>
+        </div>
+        
+        <div class="financials-section">
+          <h4>🛡️ 偿债能力</h4>
+          <div class="financials-item">
+            <span class="financials-label">资产负债率</span>
+            <span class="financials-value">${f.debtRatio.toFixed(2)}%</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">流动比率</span>
+            <span class="financials-value">${f.currentRatio.toFixed(2)}</span>
+          </div>
+        </div>
+        
+        <div class="financials-section">
+          <h4>📦 规模指标</h4>
+          <div class="financials-item">
+            <span class="financials-label">营业总收入</span>
+            <span class="financials-value">${formatBillion(f.totalRevenue)}</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">净利润</span>
+            <span class="financials-value">${formatBillion(f.netProfit)}</span>
+          </div>
+          <div class="financials-item">
+            <span class="financials-label">总资产</span>
+            <span class="financials-value">${formatBillion(f.totalAssets)}</span>
+          </div>
+        </div>
+      </div>
+      <div class="financials-footer">
+        <p>更新时间：${data.updateTime || new Date().toLocaleString('zh-CN')}</p>
+      </div>
+    `;
+
+  } catch (error) {
+    console.error('加载财报数据失败:', error);
+    contentEl.innerHTML = `<div class="empty-tip">加载失败：${error.message}</div>`;
+  } finally {
+    if (loadingEl) loadingEl.style.display = 'none';
+  }
+}
+
 // 打开 K 线弹窗
 window.openKlineModal = function(symbol, initialPeriod = 'day') {
   const modal = document.getElementById('klineModal');
@@ -416,6 +568,52 @@ window.openKlineModal = function(symbol, initialPeriod = 'day') {
         }
       };
     }
+  });
+
+  // 绑定财报标签页切换
+  document.querySelectorAll('.kline-tab').forEach(tab => {
+    tab.onclick = () => {
+      const tabName = tab.dataset.tab;
+      const chartDiv = document.getElementById('klineChart');
+      const financialsDiv = document.getElementById('klineFinancials');
+      const periodsDiv = document.getElementById('klinePeriods');
+      const indicatorsDiv = document.getElementById('klineIndicators');
+      
+      // 更新标签页状态
+      document.querySelectorAll('.kline-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      if (tabName === 'chart') {
+        chartDiv.style.display = 'block';
+        financialsDiv.style.display = 'none';
+        if (periodsDiv) periodsDiv.style.display = 'flex';
+        if (indicatorsDiv) indicatorsDiv.style.display = 'flex';
+        
+        // 如果切换到图表且还没加载数据，加载 K 线
+        if (symbol && !chart) {
+          initKlineChart();
+          loadKlineData(symbol, currentPeriod || 'day');
+        } else if (chart) {
+          // 重新调整图表尺寸
+          setTimeout(() => {
+            if (chart && chartContainer) {
+              chart.applyOptions({
+                width: chartContainer.clientWidth - 150,
+                height: chartContainer.clientHeight - 100,
+              });
+            }
+          }, 100);
+        }
+      } else if (tabName === 'financials') {
+        chartDiv.style.display = 'none';
+        financialsDiv.style.display = 'block';
+        if (periodsDiv) periodsDiv.style.display = 'none';
+        if (indicatorsDiv) indicatorsDiv.style.display = 'none';
+        
+        // 加载财报数据
+        loadFinancials(symbol);
+      }
+    };
   });
 }
 

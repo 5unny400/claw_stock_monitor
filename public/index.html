@@ -91,14 +91,18 @@
         <button class="kline-close" onclick="closeKlineModal()">×</button>
       </div>
       <div class="kline-controls">
-        <div class="kline-periods">
+        <div class="kline-tabs">
+          <button class="kline-tab active" data-tab="chart">📈 K 线图</button>
+          <button class="kline-tab" data-tab="financials">📊 财报数据</button>
+        </div>
+        <div class="kline-periods" id="klinePeriods">
           <button class="period-btn active" data-period="day">日 K</button>
           <button class="period-btn" data-period="week">周 K</button>
           <button class="period-btn" data-period="month">月 K</button>
           <button class="period-btn" data-period="60min">60 分</button>
           <button class="period-btn" data-period="5day">5 日 K</button>
         </div>
-        <div class="kline-indicators">
+        <div class="kline-indicators" id="klineIndicators">
           <label><input type="checkbox" id="ma5Check" checked> MA5</label>
           <label><input type="checkbox" id="ma10Check" checked> MA10</label>
           <label><input type="checkbox" id="ma20Check" checked> MA20</label>
@@ -106,6 +110,10 @@
         </div>
       </div>
       <div id="klineChart" class="kline-chart"></div>
+      <div id="klineFinancials" class="kline-financials" style="display: none;">
+        <div id="financialsLoading" class="kline-loading" style="display: none;">加载中...</div>
+        <div id="financialsContent" class="financials-content"></div>
+      </div>
       <div id="klineLoading" class="kline-loading" style="display: none;">加载中...</div>
     </div>
   </div>
