@@ -231,14 +231,15 @@ async function renderWatchlist() {
     const response = await fetch(`/api/stocks?symbols=${watchlist.join(',')}`);
     const stocks = await response.json();
     
-    // 清理无效股票：在 watchlist 中但不在 API 返回结果中的股票
+    // 清理无效股票：只清理 API 明确返回错误的股票（stocks 数组中不存在的）
+    // 注意：API 会跳过获取失败的股票，所以 stocks.length < watchlist.length 是正常的
     const validSymbols = stocks.map(s => s.symbol);
-    const invalidSymbols = watchlist.filter(s => !validSymbols.includes(s) && !validSymbols.includes('HK' + s) && !validSymbols.includes('US' + s));
+    const invalidSymbols = watchlist.filter(s => !validSymbols.includes(s));
     
-    if (invalidSymbols.length > 0) {
-      console.warn('发现无效股票代码，已自动清理:', invalidSymbols);
-      watchlist = watchlist.filter(s => !invalidSymbols.includes(s));
-      localStorage.setItem('watchlist', JSON.stringify(watchlist));
+    // 只有在 API 返回为空且 watchlist 不为空时，才认为是无效股票
+    if (stocks.length === 0 && watchlist.length > 0) {
+      console.warn('所有股票都无法获取数据，可能是 API 问题或股票代码全部无效');
+      // 不清理，等待用户手动处理
     }
     
     if (stocks.length === 0) {
@@ -281,19 +282,38 @@ async function renderWatchlist() {
 }
 
 // 清理无效股票（手动触发）
-function cleanupInvalidStocks() {
+async function cleanupInvalidStocks() {
   if (watchlist.length === 0) {
     alert('自选列表为空，无需清理');
     return;
   }
   
-  const confirmCleanup = confirm(`将检查并移除 ${watchlist.length} 只自选股中的无效代码，确定继续？`);
+  const confirmCleanup = confirm(`将检查 ${watchlist.length} 只自选股，移除无法获取数据的无效代码。\n\n注意：只会移除 API 明确返回错误的股票，正常显示的股票不会被删除。`);
   if (!confirmCleanup) return;
   
-  renderWatchlist(); // 渲染过程会自动清理无效股票
-  setTimeout(() => {
-    alert(`清理完成！当前剩余 ${watchlist.length} 只有效股票`);
-  }, 1000);
+  // 重新获取一次数据，检查哪些股票无法获取
+  try {
+    const response = await fetch(`/api/stocks?symbols=${watchlist.join(',')}`);
+    const stocks = await response.json();
+    
+    const validSymbols = stocks.map(s => s.symbol);
+    const invalidSymbols = watchlist.filter(s => !validSymbols.includes(s));
+    
+    if (invalidSymbols.length === 0) {
+      alert(`✅ 检查完成！所有 ${watchlist.length} 只股票均有效，无需清理。`);
+      return;
+    }
+    
+    const confirmRemove = confirm(`发现 ${invalidSymbols.length} 只无效股票：\n${invalidSymbols.join(', ')}\n\n确定要移除这些股票吗？`);
+    if (confirmRemove) {
+      watchlist = watchlist.filter(s => !invalidSymbols.includes(s));
+      localStorage.setItem('watchlist', JSON.stringify(watchlist));
+      renderWatchlist();
+      alert(`✅ 清理完成！移除了 ${invalidSymbols.length} 只无效股票，剩余 ${watchlist.length} 只。`);
+    }
+  } catch (error) {
+    alert('检查失败，请稍后重试：' + error.message);
+  }
 }
 
 // 格式化成交量
