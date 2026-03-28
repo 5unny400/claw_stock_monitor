@@ -566,7 +566,7 @@ footer {
 .kline-chart {
   width: 100%;
   height: 700px;
-  padding: 10px 30px;
+  padding: 20px 50px 50px 30px; /* 上右下左，右侧和底部留足空间给坐标轴 */
   box-sizing: border-box;
 }
 
