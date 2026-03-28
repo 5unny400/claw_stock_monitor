@@ -16,8 +16,8 @@ function initKlineChart() {
   if (!chartContainer) return;
 
   // 获取容器实际尺寸
-  const width = chartContainer.clientWidth - 70; // 减去左右 padding (20px+50px)
-  const height = chartContainer.clientHeight - 70; // 减去上下 padding (20px+50px)
+  const width = chartContainer.clientWidth - 60; // 减去左右 padding
+  const height = chartContainer.clientHeight - 100; // 减去上下 padding（底部留更多空间给成交量）
 
   // 创建图表
   chart = LightweightCharts.createChart(chartContainer, {
@@ -43,8 +43,8 @@ function initKlineChart() {
     rightPriceScale: {
       borderColor: '#2B2B43',
       scaleMargins: {
-        top: 0.15,  // 顶部留白 15%
-        bottom: 0.25, // 底部留白 25%（给成交量）
+        top: 0.1,  // 顶部留白 10%
+        bottom: 0.3, // 底部留白 30%（给成交量）
       },
     },
   });
@@ -69,8 +69,8 @@ function initKlineChart() {
 
   volumeSeries.priceScale().applyOptions({
     scaleMargins: {
-      top: 0.85,
-      bottom: 0,
+      top: 0.9,  // 成交量只占底部 10%
+      bottom: 0.1, // 底部留白，不贴边
     },
   });
 
