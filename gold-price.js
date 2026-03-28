@@ -218,7 +218,7 @@ async function fetchGoldPrice() {
           unit: '元/克'
         };
         
-        console.log(`✅ 黄金价格更新 (${result.note}): ¥${result.current.toFixed(2)}/克 (${lastGoldPrice.changePercent}%)`);
+        console.log(`[Gold] Price updated: ¥${result.current.toFixed(2)}/g (${lastGoldPrice.changePercent}%)`);
         return lastGoldPrice;
       }
     } catch (e) {
@@ -232,17 +232,17 @@ async function fetchGoldPrice() {
 
 // 定时更新
 function startPolling(intervalMs = 3000) {
-  console.log('🥇 开始轮询黄金价格...');
+  console.log('[Gold] Starting polling...');
   
   // 立即获取一次
   fetchGoldPrice().then(price => {
-    console.log(`✅ 黄金价格：¥${price.current.toFixed(2)}/克 (${price.changePercent}%) | ${price.market}`);
+    console.log(`[Gold] Price: ¥${price.current.toFixed(2)}/g (${price.changePercent}%) | ${price.market}`);
   });
   
   // 定时轮询
   setInterval(() => {
     fetchGoldPrice().then(price => {
-      console.log(`✅ 黄金价格：¥${price.current.toFixed(2)}/克 (${price.changePercent}%) | ${price.market}`);
+      console.log(`[Gold] Price: ¥${price.current.toFixed(2)}/g (${price.changePercent}%) | ${price.market}`);
     });
   }, intervalMs);
 }

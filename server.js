@@ -686,7 +686,7 @@ app.get('/api/kline', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`📈 股票盯票验票系统已启动`);
-  console.log(`🌐 访问地址：http://localhost:${PORT}`);
-  console.log(`🥇 黄金监控：实时价格 (华安黄金 ETF 518880)`);
+  console.log('[Stock Monitor] Server started');
+  console.log(`[Stock Monitor] URL: http://localhost:${PORT}`);
+  console.log('[Stock Monitor] Gold price monitoring enabled (AU9999)');
 });
