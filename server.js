@@ -100,16 +100,20 @@ app.get('/api/stock/:symbol', async (req, res) => {
     }
     
     const d = data.data;
-    const current = d.f43 / 100 || 0;
-    const close = d.f60 / 100 || current;
+    
+    // 根据市场确定价格精度：港股除以 1000，A 股/美股除以 100
+    const priceDivisor = marketPrefix === '116.' ? 1000 : 100;
+    
+    const current = d.f43 / priceDivisor || 0;
+    const close = d.f60 / priceDivisor || current;
     const stockData = {
       symbol: symbol,
       name: d.f58 || d.f12 || symbol,
-      open: d.f46 / 100 || current,
+      open: d.f46 / priceDivisor || current,
       close: close,
       current: current,
-      high: d.f48 / 100 || current,
-      low: d.f47 / 100 || current,
+      high: d.f48 / priceDivisor || current,
+      low: d.f47 / priceDivisor || current,
       volume: d.f47 || 0,
       amount: d.f48 || 0,
       change: (current - close),
@@ -159,8 +163,12 @@ app.get('/api/stocks', async (req, res) => {
         const data = response.data;
         if (data.data && data.data.f43) {
           const d = data.data;
-          const current = d.f43 / 100 || 0;
-          const close = d.f60 / 100 || current;
+          
+          // 根据市场确定价格精度：港股除以 1000，A 股/美股除以 100
+          const priceDivisor = /^116\./.test(secid) ? 1000 : 100;
+          
+          const current = d.f43 / priceDivisor || 0;
+          const close = d.f60 / priceDivisor || current;
           results.push({
             symbol: symbol,
             name: d.f58 || d.f12 || symbol,
@@ -170,8 +178,8 @@ app.get('/api/stocks', async (req, res) => {
             changePercent: close ? ((current - close) / close * 100).toFixed(2) : '0.00',
             volume: d.f47 || 0,
             amount: d.f48 || 0,
-            high: d.f48 / 100 || current,
-            low: d.f47 / 100 || current,
+            high: d.f46 / priceDivisor || current,
+            low: d.f45 / priceDivisor || current,
             time: new Date().toLocaleTimeString('zh-CN')
           });
         }
@@ -232,7 +240,11 @@ app.get('/api/stock/:symbol/info', async (req, res) => {
     
     // 判断市场 - 使用 f168（市场代码）和 f169
     let market = 'A 股';
-    if (d.f168 === '116' || d.f169 === 5) market = '港股';
+    let priceDivisor = 100; // A 股/美股除以 100
+    if (d.f168 === '116' || d.f169 === 5) {
+      market = '港股';
+      priceDivisor = 1000; // 港股除以 1000
+    }
     else if (d.f168 === '105' || d.f169 === 6) market = '美股';
     else if (d.f169 === 1) market = '沪市';
     else if (d.f169 === 2) market = '深市';
@@ -244,7 +256,7 @@ app.get('/api/stock/:symbol/info', async (req, res) => {
       code: d.f12 || symbol.replace(/^(HK|US)/, ''),
       available: true,
       market: market,
-      current: (d.f43 || 0) / 100,
+      current: (d.f43 || 0) / priceDivisor,
       updateTime: new Date().toLocaleString('zh-CN'),
       timestamp: Date.now()
     };
