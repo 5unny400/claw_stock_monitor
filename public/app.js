@@ -171,7 +171,14 @@ async function addStock() {
   }
   
   const cleanSymbol = symbol.replace(/^(HK|US)/, '');
-  if (watchlist.some(s => s.replace(/^(HK|US)/, '') === cleanSymbol)) {
+  
+  // 去重检查：同时检查带前缀和不带前缀的情况
+  const exists = watchlist.some(s => {
+    const sClean = s.replace(/^(HK|US)/, '');
+    return sClean === cleanSymbol || s === symbol || sClean === symbol || s === cleanSymbol;
+  });
+  
+  if (exists) {
     alert('该股票已在自选列表中');
     document.getElementById('stockSymbol').value = '';
     return;
@@ -183,6 +190,13 @@ async function addStock() {
     
     if (data.error) {
       alert(`股票验证失败：${data.error}`);
+      // 从 watchlist 中移除无效代码（如果存在）
+      const invalidIndex = watchlist.findIndex(s => s.replace(/^(HK|US)/, '') === cleanSymbol);
+      if (invalidIndex !== -1) {
+        watchlist.splice(invalidIndex, 1);
+        localStorage.setItem('watchlist', JSON.stringify(watchlist));
+        console.log(`已移除无效股票代码：${cleanSymbol}`);
+      }
       return;
     }
     
@@ -217,6 +231,21 @@ async function renderWatchlist() {
     const response = await fetch(`/api/stocks?symbols=${watchlist.join(',')}`);
     const stocks = await response.json();
     
+    // 清理无效股票：在 watchlist 中但不在 API 返回结果中的股票
+    const validSymbols = stocks.map(s => s.symbol);
+    const invalidSymbols = watchlist.filter(s => !validSymbols.includes(s) && !validSymbols.includes('HK' + s) && !validSymbols.includes('US' + s));
+    
+    if (invalidSymbols.length > 0) {
+      console.warn('发现无效股票代码，已自动清理:', invalidSymbols);
+      watchlist = watchlist.filter(s => !invalidSymbols.includes(s));
+      localStorage.setItem('watchlist', JSON.stringify(watchlist));
+    }
+    
+    if (stocks.length === 0) {
+      container.innerHTML = '<p class="empty-tip">暂无数据，请添加有效的股票代码</p>';
+      return;
+    }
+    
     container.innerHTML = stocks.map(stock => `
       <div class="stock-card">
         <button class="remove-btn" onclick="removeStock('${stock.symbol}')">✕</button>
@@ -246,8 +275,25 @@ async function renderWatchlist() {
     checkAlerts(stocks);
     
   } catch (error) {
-    container.innerHTML = '<div class="empty-tip">加载失败</div>';
+    console.error('加载自选股失败:', error);
+    container.innerHTML = '<div class="empty-tip">加载失败，请刷新页面重试</div>';
   }
+}
+
+// 清理无效股票（手动触发）
+function cleanupInvalidStocks() {
+  if (watchlist.length === 0) {
+    alert('自选列表为空，无需清理');
+    return;
+  }
+  
+  const confirmCleanup = confirm(`将检查并移除 ${watchlist.length} 只自选股中的无效代码，确定继续？`);
+  if (!confirmCleanup) return;
+  
+  renderWatchlist(); // 渲染过程会自动清理无效股票
+  setTimeout(() => {
+    alert(`清理完成！当前剩余 ${watchlist.length} 只有效股票`);
+  }, 1000);
 }
 
 // 格式化成交量

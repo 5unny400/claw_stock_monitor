@@ -295,12 +295,21 @@ button:active {
   justify-content: center;
 }
 
-.btn-refresh, .btn-auto {
+.btn-refresh, .btn-auto, .btn-cleanup {
   min-width: 150px;
 }
 
 .btn-auto.active {
   background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+}
+
+.btn-cleanup {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.btn-cleanup:hover {
+  background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+  transform: translateY(-2px);
 }
 
 /* 验票结果 */
