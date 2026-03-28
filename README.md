@@ -90,6 +90,18 @@ node server.js
 start-service.bat
 ```
 
+**方式四：输出日志到文件（推荐用于生产环境）**
+```bash
+# 创建日志文件夹
+mkdir logs
+
+# 启动服务并将日志输出到文件
+node server.js > logs\app.log 2>&1
+
+# 或者使用 PM2（自动管理日志）
+pm2 start server.js --name stock-monitor
+```
+
 4. **访问网站**
 打开浏览器访问：http://localhost:3000
 
@@ -105,6 +117,9 @@ stock-monitor/
 │   ├── style.css       # 样式表
 │   ├── app.js          # 前端逻辑
 │   └── kline-chart.js  # K 线图表组件（v1.2.0 新增）
+├── logs/               # 日志文件夹（手动创建）
+│   ├── app.log         # 应用日志（标准输出 + 错误）
+│   └── .gitkeep        # 保持文件夹的占位文件
 ├── README.md           # 项目说明文档
 └── CHANGELOG.md        # 更新日志
 ```
@@ -269,6 +284,57 @@ GET /api/market
 ```
 
 华安黄金 ETF 每份约等于 0.01 克黄金，价格紧密跟踪上海黄金交易所 AU9999 现货价格。
+
+## 📝 日志管理
+
+### 查看日志
+
+**方式一：使用文本编辑器**
+```bash
+# Windows
+notepad logs\app.log
+
+# 或使用 VS Code
+code logs\app.log
+```
+
+**方式二：PowerShell 实时查看**
+```powershell
+# 实时跟踪日志（类似 tail -f）
+Get-Content logs\app.log -Wait -Tail 50
+
+# 查看最近 100 行
+Get-Content logs\app.log -Tail 100
+```
+
+**方式三：使用 PM2（如果使用 PM2 启动）**
+```bash
+# 实时查看日志
+pm2 logs stock-monitor
+
+# 查看最近 50 行
+pm2 logs stock-monitor --lines 50
+```
+
+### 日志文件位置
+
+**自定义日志文件：**
+- `logs/app.log` - 应用日志（标准输出 + 错误日志）
+
+**PM2 日志文件（如使用 PM2）：**
+- `C:\Users\34076\.pm2\logs\stock-monitor-out.log` - 标准输出
+- `C:\Users\34076\.pm2\logs\stock-monitor-error.log` - 错误日志
+
+### 日志清理
+
+日志文件会持续增长，建议定期清理：
+```bash
+# 清空日志文件（保留文件）
+type nul > logs\app.log
+
+# 或删除 7 天前的日志
+forfiles /p logs /s /m *.log /d -7 /c "cmd /c del @path"
+```
 
 ## ⚠️ 注意事项
 
