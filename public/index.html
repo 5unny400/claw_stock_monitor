@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>股票盯票验票系统</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Lightweight Charts for K-line -->
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
   <div class="container">
@@ -98,7 +100,8 @@
           <button class="period-btn active" data-period="day">日 K</button>
           <button class="period-btn" data-period="week">周 K</button>
           <button class="period-btn" data-period="month">月 K</button>
-          <button class="period-btn" data-period="60min">60 分钟</button>
+          <button class="period-btn" data-period="60min">60 分</button>
+          <button class="period-btn" data-period="5day">5 日 K</button>
         </div>
         <div class="kline-indicators">
           <label><input type="checkbox" id="ma5Check" checked> MA5</label>
@@ -116,7 +119,7 @@
     <p>数据来源：新浪财经 | 更新时间：<span id="updateTime">--:--:--</span></p>
   </footer>
 
-  <script type="module" src="kline-chart.js"></script>
+  <script src="kline-chart.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 // K 线图组件 - 使用 Lightweight Charts
-import { createChart, ColorType } from 'https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js';
+// 使用 UMD 全局变量模式（standalone 版本会暴露 LightweightCharts 全局对象）
 
 let chart = null;
 let candlestickSeries = null;
@@ -11,16 +11,16 @@ let currentSymbol = null;
 let currentPeriod = 'day';
 
 // 初始化 K 线图表
-export function initKlineChart() {
+function initKlineChart() {
   const chartContainer = document.getElementById('klineChart');
   if (!chartContainer) return;
 
   // 创建图表
-  chart = createChart(chartContainer, {
+  chart = LightweightCharts.createChart(chartContainer, {
     width: chartContainer.clientWidth,
     height: 500,
     layout: {
-      background: { type: ColorType.Solid, color: '#1a1a2e' },
+      background: { color: '#1a1a2e' },
       textColor: '#d1d4dc',
     },
     grid: {
@@ -28,7 +28,7 @@ export function initKlineChart() {
       horzLines: { color: '#2B2B43' },
     },
     crosshair: {
-      mode: 1, // CrosshairMode.Normal
+      mode: LightweightCharts.CrosshairMode.Normal,
     },
     timeScale: {
       borderColor: '#2B2B43',
@@ -91,30 +91,40 @@ export function initKlineChart() {
   });
 }
 
+// 导出到全局（供 app.js 调用）
+window.initKlineChart = initKlineChart;
+
 // 计算移动平均线
 function calculateMA(data, period) {
   const maData = [];
   for (let i = 0; i < data.length; i++) {
     if (i < period - 1) {
-      maData.push({ time: data[i].time, value: NaN });
+      // 跳过数据不足的点，不添加到数组
       continue;
     }
 
     let sum = 0;
+    let validCount = 0;
     for (let j = 0; j < period; j++) {
-      sum += data[i - j].close;
+      const close = data[i - j].close;
+      if (close !== null && close !== undefined && !isNaN(close)) {
+        sum += close;
+        validCount++;
+      }
     }
 
-    maData.push({
-      time: data[i].time,
-      value: sum / period,
-    });
+    if (validCount === period) {
+      maData.push({
+        time: data[i].time,
+        value: sum / period,
+      });
+    }
   }
   return maData;
 }
 
 // 加载 K 线数据
-export async function loadKlineData(symbol, period = 'day') {
+async function loadKlineData(symbol, period = 'day') {
   const loadingEl = document.getElementById('klineLoading');
   const chartEl = document.getElementById('klineChart');
   
@@ -138,29 +148,105 @@ export async function loadKlineData(symbol, period = 'day') {
     }
 
     if (!data.klines || data.klines.length === 0) {
-      alert('暂无 K 线数据');
+      console.warn('暂无 K 线数据:', data);
+      if (loadingEl) loadingEl.textContent = '暂无数据';
+      if (loadingEl) loadingEl.style.display = 'block';
+      if (chartEl) chartEl.style.opacity = '1';
       return;
     }
 
+    console.log('K 线原始数据:', data.klines.length, '条');
+
     // 转换数据格式
-    const candleData = data.klines.map(k => ({
-      time: k.time.split(' ')[0], // 只取日期部分
-      open: k.open,
-      high: k.high,
-      low: k.low,
-      close: k.close,
-    }));
+    let candleData;
+    
+    if (period === '5day') {
+      // 五日 K：每 5 天合并为一根 K 线
+      const rawCandleData = data.klines
+        .map(k => ({
+          time: k.time.split(' ')[0],
+          open: k.open,
+          high: k.high,
+          low: k.low,
+          close: k.close,
+          volume: k.volume,
+        }))
+        .filter(k => !isNaN(k.open) && !isNaN(k.close) && k.open > 0 && k.close > 0);
+      
+      candleData = [];
+      for (let i = 0; i < rawCandleData.length; i += 5) {
+        const group = rawCandleData.slice(i, i + 5);
+        if (group.length < 2) continue; // 至少需要 2 天数据
+        
+        candleData.push({
+          time: group[group.length - 1].time, // 使用最后一天的日期
+          open: group[0].open,                // 第一天的开盘
+          high: Math.max(...group.map(d => d.high)), // 最高价
+          low: Math.min(...group.map(d => d.low)),   // 最低价
+          close: group[group.length - 1].close,      // 最后一天的收盘
+        });
+      }
+    } else {
+      candleData = data.klines
+        .map(k => {
+          // 分钟 K 线保留完整时间（带时分），日/周/月 K 只取日期
+          let time = k.time;
+          if (!period.includes('min')) {
+            time = k.time.split(' ')[0]; // 只取日期部分
+          }
+          
+          // 过滤无效数据
+          if (isNaN(k.open) || isNaN(k.close) || k.open === 0 || k.close === 0) {
+            return null;
+          }
+          
+          return {
+            time: time,
+            open: k.open,
+            high: k.high,
+            low: k.low,
+            close: k.close,
+          };
+        })
+        .filter(k => k !== null); // 过滤无效数据
+    }
+
+    console.log('转换后 K 线数据:', candleData.length, '条，示例:', candleData[0]);
 
     // 成交量数据（红色表示涨，绿色表示跌）
-    const volumeData = data.klines.map(k => ({
-      time: k.time.split(' ')[0],
-      value: k.volume / 10000, // 转换为万手
-      color: k.close >= k.open ? '#ef535080' : '#26a69a80',
-    }));
+    const volumeData = data.klines
+      .map(k => {
+        let time = k.time;
+        if (!period.includes('min')) {
+          time = k.time.split(' ')[0];
+        }
+        
+        if (isNaN(k.open) || isNaN(k.close) || k.open === 0 || k.close === 0) {
+          return null;
+        }
+        
+        return {
+          time: time,
+          value: k.volume / 10000, // 转换为万手
+          color: k.close >= k.open ? '#ef535080' : '#26a69a80',
+        };
+      })
+      .filter(k => k !== null);
 
     // 更新图表
     if (candlestickSeries) {
+      console.log('设置 K 线数据...');
       candlestickSeries.setData(candleData);
+      
+      // 等待数据设置完成后，调整时间轴以显示所有数据
+      setTimeout(() => {
+        if (chart) {
+          chart.timeScale().fitContent();
+          console.log('图表时间轴已适配');
+        }
+      }, 100);
+      
+      console.log('K 线数据设置完成');
     }
 
     if (volumeSeries) {
@@ -225,19 +311,34 @@ function getPeriodName(period) {
 }
 
 // 打开 K 线弹窗
-export function openKlineModal(symbol) {
+window.openKlineModal = function(symbol) {
   const modal = document.getElementById('klineModal');
   if (!modal) return;
 
   modal.style.display = 'flex';
   
-  // 初始化图表（如果还没初始化）
-  if (!chart) {
-    initKlineChart();
-  }
-
-  // 加载数据
-  loadKlineData(symbol, 'day');
+  // 延迟初始化图表，确保弹窗已显示且容器有正确尺寸
+  setTimeout(() => {
+    const chartContainer = document.getElementById('klineChart');
+    if (!chartContainer) return;
+    
+    // 初始化图表（如果还没初始化）
+    if (!chart) {
+      console.log('初始化 K 线图表...');
+      initKlineChart();
+    } else {
+      // 如果图表已存在，确保尺寸正确
+      console.log('图表已存在，调整尺寸...');
+      chart.applyOptions({
+        width: chartContainer.clientWidth,
+        height: chartContainer.clientHeight,
+      });
+    }
+    
+    // 加载数据
+    console.log('开始加载 K 线数据，股票代码:', symbol);
+    loadKlineData(symbol, 'day');
+  }, 200);
 
   // 绑定周期切换事件
   document.querySelectorAll('.period-btn').forEach(btn => {
@@ -261,16 +362,12 @@ export function openKlineModal(symbol) {
 }
 
 // 关闭 K 线弹窗
-export function closeKlineModal() {
+window.closeKlineModal = function() {
   const modal = document.getElementById('klineModal');
   if (modal) {
     modal.style.display = 'none';
   }
 }
-
-// 全局函数（供 app.js 调用）
-window.openKlineModal = openKlineModal;
-window.closeKlineModal = closeKlineModal;
 
 // 页面加载完成后初始化
 if (document.readyState === 'loading') {

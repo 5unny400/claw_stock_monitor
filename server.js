@@ -535,7 +535,8 @@ const KLINE_PERIOD_MAP = {
   '30min': 30,     // 30 分钟 K
   '15min': 15,     // 15 分钟 K
   '5min': 5,       // 5 分钟 K
-  '1min': 1        // 1 分钟 K
+  '1min': 1,       // 1 分钟 K
+  '5day': 101      // 五日 K（用日 K 数据，前端处理）
 };
 
 // 获取 K 线数据 API
@@ -595,8 +596,8 @@ app.get('/api/kline', async (req, res) => {
       begDate = beg.toISOString().split('T')[0].replace(/-/g, '');
     }
     
-    // 东方财富 K 线 API
-    const url = `http://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${secid}&klt=${klt}&fqt=1&beg=${begDate}&end=${endDate}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60`;
+    // 东方财富 K 线 API（fqt=0 不复权，避免历史数据出现负值）
+    const url = `http://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${secid}&klt=${klt}&fqt=0&beg=${begDate}&end=${endDate}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60`;
     
     const response = await axios.get(url, {
       headers: {
@@ -617,21 +618,44 @@ app.get('/api/kline', async (req, res) => {
     }
     
     // 解析 K 线数据
-    const klines = data.data.klines.map(kline => {
-      const parts = kline.split(',');
-      return {
-        time: parts[0],                    // 日期
-        open: parseFloat(parts[1]),        // 开盘价
-        close: parseFloat(parts[2]),       // 收盘价
-        high: parseFloat(parts[3]),        // 最高价
-        low: parseFloat(parts[4]),         // 最低价
-        volume: parseFloat(parts[5]) || 0, // 成交量
-        amount: parseFloat(parts[6]) || 0, // 成交额
-        amplitude: parseFloat(parts[7]) || 0, // 振幅
-        changeRate: parseFloat(parts[8]) || 0, // 涨跌幅
-        changeValue: parseFloat(parts[9]) || 0 // 涨跌额
-      };
-    });
+    const klines = data.data.klines
+      .map(kline => {
+        const parts = kline.split(',');
+        const timeStr = parts[0];
+        const open = parseFloat(parts[1]);
+        const close = parseFloat(parts[2]);
+        const high = parseFloat(parts[3]);
+        const low = parseFloat(parts[4]);
+        
+        // 过滤无效数据（NaN 或 0）
+        if (isNaN(open) || isNaN(close) || isNaN(high) || isNaN(low) || open === 0 || close === 0) {
+          return null;
+        }
+        
+        // 分钟 K 线需要带时分的时间格式（YYYY-MM-DD HH:mm）
+        let time = timeStr;
+        if ([1, 5, 15, 30, 60].includes(klt) && timeStr.length === 10) {
+          // 如果是分钟 K 且只有日期，添加时分（东方财富分钟 K 返回格式：2026-03-28 10:30）
+          // 实际上 API 返回的已经包含时分，这里做兼容处理
+          if (!timeStr.includes(' ')) {
+            time = timeStr + ' 00:00';
+          }
+        }
+        
+        return {
+          time: time,
+          open: open,
+          close: close,
+          high: high,
+          low: low,
+          volume: parseFloat(parts[5]) || 0,
+          amount: parseFloat(parts[6]) || 0,
+          amplitude: parseFloat(parts[7]) || 0,
+          changeRate: parseFloat(parts[8]) || 0,
+          changeValue: parseFloat(parts[9]) || 0
+        };
+      })
+      .filter(k => k !== null); // 过滤无效数据
     
     res.json({
       symbol,

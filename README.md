@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D14.0.0-green.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-orange.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-orange.svg)
 
 ## ✨ 功能特性
 
@@ -39,6 +39,13 @@
 - 支持"高于"和"低于"两种条件
 - 触发时高亮显示
 
+### 📊 K 线图（v1.2.0 新增）
+- 点击自选股卡片的"📊 K 线"按钮查看
+- 支持周期切换：日 K、周 K、月 K、60 分钟 K
+- 技术指标：MA5/10/20 均线、VOL 成交量
+- 交互功能：缩放、拖拽、十字光标查看 OHLC
+- 红涨绿跌，符合中国投资者习惯
+
 ## 🚀 快速开始
 
 ### 环境要求
@@ -58,8 +65,20 @@ npm install
 ```
 
 3. **启动服务**
+
+**方式一：使用 npm**
 ```bash
 npm start
+```
+
+**方式二：直接运行 Node**
+```bash
+node server.js
+```
+
+**方式三：Windows 双击启动**
+```bash
+start-service.bat
 ```
 
 4. **访问网站**
@@ -212,8 +231,19 @@ GET /api/market
 - CSS3 (渐变、动画)
 - 原生 JavaScript (ES6+)
 - LocalStorage (本地存储)
+- Lightweight Charts (K 线图表库)
 
 ## 📝 更新日志
+
+### v1.2.0 (2026-03-28)
+- ✅ 新增 K 线图功能
+  - 支持日 K、周 K、月 K、60 分钟 K 周期切换
+  - 集成 Lightweight Charts 专业图表库
+  - MA5/10/20 均线指标
+  - VOL 成交量柱状图
+  - 支持缩放、拖拽、十字光标交互
+- ✅ 新增 `/api/kline` 接口（东方财富数据源）
+- ✅ 优化启动方式（支持 npm start / node server.js /.bat 双击）
 
 ### v1.0.0 (2026-03-25)
 - ✅ 初始版本发布
