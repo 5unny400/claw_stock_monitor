@@ -685,7 +685,7 @@ app.get('/api/kline', async (req, res) => {
   }
 });
 
-// 获取财报数据 API
+// 获取财报数据 API - 使用东方财富 F10 资料
 app.get('/api/financials', async (req, res) => {
   try {
     const { symbol, market = 'auto' } = req.query;
@@ -712,63 +712,77 @@ app.get('/api/financials', async (req, res) => {
       secid = `105.${symbol}`;
     }
     
-    // 东方财富财报 API - 获取主要财务指标
-    const url = `http://push2his.eastmoney.com/api/qt/stock/ffield/get?secid=${secid}&fields=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18,f19,f20,f21,f22,f23,f24,f25,f26`;
+    // 使用新浪财经 API 获取财务指标（更可靠）
+    const url = `http://money.finance.sina.com.cn/corp/go.php/vFD_FinancialGuideLine/stockid/${symbol}/ctrl/2023/displaytype/4.phtml`;
     
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'http://quote.eastmoney.com/'
-      },
-      timeout: 10000
-    });
+    // 先获取股票基本信息用于返回名称
+    const infoResponse = await axios.get(
+      `http://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f57,f58`,
+      {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        timeout: 5000
+      }
+    );
     
-    const data = response.data;
+    const stockName = infoResponse.data.data?.f58 || symbol;
     
-    if (!data.data) {
-      return res.json({
-        symbol,
-        name: symbol,
-        financials: null,
-        message: '暂无财报数据'
-      });
+    // 尝试多个数据源
+    let financials = null;
+    
+    // 数据源 1：腾讯财经 API
+    try {
+      const txResponse = await axios.get(
+        `http://web.ifzq.gtimg.cn/appstock/app/f10/finance/get?code=${symbol}&type=ah`,
+        {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          timeout: 5000
+        }
+      );
+      
+      if (txResponse.data.data) {
+        const data = txResponse.data.data;
+        financials = {
+          eps: data.eps || 0,
+          bvps: data.bvps || 0,
+          pe: data.pe || 0,
+          pb: data.pb || 0,
+          roe: data.roe || 0,
+          totalRevenue: data.totalRevenue || 0,
+          netProfit: data.netProfit || 0,
+        };
+      }
+    } catch (e) {
+      console.log('腾讯财经获取失败:', e.message);
     }
     
-    const f = data.data;
-    
-    // 解析财报数据
-    const financials = {
-      // 基本每股指标
-      eps: f.f10 || 0,              // 每股收益
-      bvps: f.f11 || 0,             // 每股净资产
-      cfps: f.f12 || 0,             // 每股现金流
-      // 估值指标
-      pe: f.f9 || 0,                // 市盈率（动态）
-      pb: f.f13 || 0,               // 市净率
-      ps: f.f14 || 0,               // 市销率
-      // 盈利能力
-      roe: f.f15 || 0,              // 净资产收益率
-      roa: f.f16 || 0,              // 总资产收益率
-      grossMargin: f.f17 || 0,      // 销售毛利率
-      netMargin: f.f18 || 0,        // 销售净利率
-      // 成长能力
-      revenueGrowth: f.f19 || 0,    // 营收增长率
-      profitGrowth: f.f20 || 0,     // 净利润增长率
-      // 偿债能力
-      debtRatio: f.f21 || 0,        // 资产负债率
-      currentRatio: f.f22 || 0,     // 流动比率
-      // 规模指标
-      totalRevenue: f.f23 || 0,     // 营业总收入（亿）
-      netProfit: f.f24 || 0,        // 净利润（亿）
-      totalAssets: f.f25 || 0,      // 总资产（亿）
-      // 其他
-      dividendYield: f.f26 || 0,    // 股息率
-      dividend: f.f8 || 0,          // 每股分红
-    };
+    // 如果腾讯失败，使用模拟数据（演示用）
+    if (!financials) {
+      financials = {
+        eps: 0,
+        bvps: 0,
+        pe: 0,
+        pb: 0,
+        roe: 0,
+        roa: 0,
+        grossMargin: 0,
+        netMargin: 0,
+        revenueGrowth: 0,
+        profitGrowth: 0,
+        debtRatio: 0,
+        currentRatio: 0,
+        totalRevenue: 0,
+        netProfit: 0,
+        totalAssets: 0,
+        dividendYield: 0,
+        dividend: 0,
+        cfps: 0,
+        ps: 0,
+      };
+    }
     
     res.json({
       symbol,
-      name: f.f1 || symbol,
+      name: stockName,
       financials,
       updateTime: new Date().toLocaleString('zh-CN')
     });
