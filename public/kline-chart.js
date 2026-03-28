@@ -16,8 +16,17 @@ function initKlineChart() {
   if (!chartContainer) return;
 
   // 获取容器实际尺寸
-  const width = chartContainer.clientWidth - 150; // 右侧留 120px 给价格轴 +30px 余量
-  const height = chartContainer.clientHeight - 100; // 底部留 70px 给时间轴和成交量 +30px 余量
+  const containerWidth = chartContainer.clientWidth;
+  const containerHeight = chartContainer.clientHeight;
+  
+  // 检查容器是否可见（避免在弹窗隐藏时初始化）
+  if (containerWidth <= 150 || containerHeight <= 100) {
+    console.warn('K 线容器尺寸过小，跳过初始化:', containerWidth, 'x', containerHeight);
+    return;
+  }
+  
+  const width = containerWidth - 150; // 右侧留 120px 给价格轴 +30px 余量
+  const height = containerHeight - 100; // 底部留 70px 给时间轴和成交量 +30px 余量
 
   // 创建图表
   chart = LightweightCharts.createChart(chartContainer, {
@@ -101,9 +110,14 @@ function initKlineChart() {
   // 响应式调整
   window.addEventListener('resize', () => {
     if (chart && chartContainer) {
-      chart.applyOptions({
-        width: chartContainer.clientWidth,
-      });
+      const newWidth = Math.max(0, chartContainer.clientWidth - 150);
+      const newHeight = Math.max(0, chartContainer.clientHeight - 100);
+      if (newWidth > 0 && newHeight > 0) {
+        chart.applyOptions({
+          width: newWidth,
+          height: newHeight,
+        });
+      }
     }
   });
 }
@@ -413,12 +427,5 @@ window.closeKlineModal = function() {
   }
 }
 
-// 页面加载完成后初始化
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    // 延迟初始化，等待 DOM 就绪
-    setTimeout(initKlineChart, 100);
-  });
-} else {
-  setTimeout(initKlineChart, 100);
-}
+// 不在页面加载时初始化，只在打开 K 线弹窗时初始化
+// 这样可以避免容器隐藏时尺寸为 0 的问题
