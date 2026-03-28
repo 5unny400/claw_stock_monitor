@@ -735,22 +735,23 @@ app.get('/api/financials', async (req, res) => {
     const d = data.data;
     const stockName = d.f58 || symbol;
     
-    // 解析财报数据 - 使用正确的字段映射
+    // 解析财报数据 - 只显示确定的字段
+    // f162: 市盈率，f126: 股息率，f104: 营收，f109: 净利润，f116: 总资产
     const financials = {
-      // 基本每股指标
-      eps: d.f103 ? parseFloat((d.f103 / 100000000).toFixed(2)) : 0,
-      bvps: d.f44 ? parseFloat((d.f44 / 100).toFixed(2)) : 0,
+      // 基本每股指标 - 需要更准确的 API
+      eps: 0,
+      bvps: 0,
       cfps: 0,
-      dividend: d.f106 ? parseFloat((d.f106 / 100).toFixed(2)) : 0,
+      dividend: 0,
       // 估值指标
       pe: d.f162 ? parseFloat((d.f162 / 100).toFixed(2)) : 0,
-      pb: d.f45 ? parseFloat((d.f45 / 100).toFixed(2)) : 0,
+      pb: 0,
       ps: 0,
       dividendYield: d.f126 ? parseFloat(d.f126.toFixed(2)) : 0,
-      // 盈利能力
-      roe: d.f105 ? parseFloat((d.f105 / 100000000).toFixed(2)) : 0,
+      // 盈利能力 - 需要更准确的 API
+      roe: 0,
       roa: 0,
-      grossMargin: d.f160 ? parseFloat(d.f160.toFixed(2)) : 0,
+      grossMargin: 0,
       netMargin: 0,
       // 成长能力
       revenueGrowth: 0,
