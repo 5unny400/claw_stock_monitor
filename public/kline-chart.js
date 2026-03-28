@@ -38,6 +38,7 @@ function initKlineChart() {
       borderColor: '#2B2B43',
       timeVisible: true,
       secondsVisible: false,
+      visible: false, // 隐藏时间轴滑块
     },
   });
 
