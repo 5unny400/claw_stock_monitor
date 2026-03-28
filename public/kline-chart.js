@@ -16,7 +16,7 @@ function initKlineChart() {
   if (!chartContainer) return;
 
   // 获取容器实际尺寸
-  const width = chartContainer.clientWidth - 80; // 右侧留空间给价格轴
+  const width = chartContainer.clientWidth - 100; // 右侧留空间给价格轴
   const height = chartContainer.clientHeight - 30; // 底部留空间给时间轴
 
   // 创建图表
