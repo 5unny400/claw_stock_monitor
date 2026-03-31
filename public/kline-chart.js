@@ -597,6 +597,16 @@ window.openKlineModal = function(symbol, initialPeriod = 'day') {
     }
   });
 
+  // 检查当前激活的标签页
+  const activeTab = document.querySelector('.kline-tab.active');
+  const isFinancialsTab = activeTab && activeTab.dataset.tab === 'financials';
+  
+  // 如果当前在财报标签页，加载财报数据
+  if (isFinancialsTab) {
+    console.log('打开弹窗时在财报标签页，加载财报数据:', symbol);
+    loadFinancials(symbol);
+  }
+  
   // 绑定财报标签页切换
   document.querySelectorAll('.kline-tab').forEach(tab => {
     tab.onclick = () => {
@@ -638,6 +648,7 @@ window.openKlineModal = function(symbol, initialPeriod = 'day') {
         if (indicatorsDiv) indicatorsDiv.style.display = 'none';
         
         // 加载财报数据
+        console.log('切换到财报标签页，加载数据:', symbol);
         loadFinancials(symbol);
       }
     };
