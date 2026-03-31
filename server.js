@@ -712,9 +712,18 @@ app.get('/api/financials', async (req, res) => {
       secid = `105.${symbol}`;
     }
     
-    // 获取股票基本信息和财务指标
+    // 使用东方财富财务分析 API - 获取同花顺 F10 风格的完整财务指标
+    // 字段说明：
+    // f186: 营业总收入，f187: 营业总收入同比增长 (%)，f188: 归属净利润
+    // f189: 归属净利润同比增长 (%)，f190: 扣非净利润，f191: 扣非净利润同比增长 (%)
+    // f192: 经营现金流净额，f193: 经营现金流净额同比增长 (%)
+    // f194: 基本每股收益，f195: 每股净资产，f196: 每股经营现金流
+    // f197: 销售毛利率 (%)，f198: 销售净利率 (%)，f199: ROE(加权) (%)
+    // f200: ROA (%)，f201: 资产负债率 (%)，f202: 流动比率，f203: 速动比率
+    // f204: 市盈率 (静)，f205: 市盈率 (TTM)，f206: 市净率，f207: 市销率
+    // f208: 股息率 (%)，f209: 总市值，f210: 流通市值
     const response = await axios.get(
-      `http://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f44,f45,f46,f47,f48,f49,f50,f51,f52,f57,f58,f59,f60,f103,f104,f105,f106,f107,f108,f109,f116,f125,f126,f127,f128,f129,f130,f131,f132,f133,f134,f135,f136,f137,f138,f139,f140,f141,f142,f143,f144,f145,f146,f147,f148,f149,f150,f151,f152,f153,f154,f155,f156,f157,f158,f159,f160,f161,f162,f163,f164,f165,f166,f167,f168,f169`,
+      `http://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f57,f58,f59,f60,f167,f168,f169,f186,f187,f188,f189,f190,f191,f192,f193,f194,f195,f196,f197,f198,f199,f200,f201,f202,f203,f204,f205,f206,f207,f208,f209,f210`,
       {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         timeout: 10000
@@ -735,34 +744,67 @@ app.get('/api/financials', async (req, res) => {
     const d = data.data;
     const stockName = d.f58 || symbol;
     
-    // 解析财报数据 - 只显示确定的字段
-    // f162: 市盈率，f126: 股息率，f104: 营收，f109: 净利润，f116: 总资产
+    // 判断市场类型，用于财务数据单位转换
+    // 使用 secid 前缀判断：116=港股，105=美股，1=沪市，0=深市
+    const isHK = secid.startsWith('116.');
+    const isUS = secid.startsWith('105.');
+    
+    // 东方财富财务数据单位说明：
+    // - A 股：f186-f210 单位是元
+    // - 港股/美股：单位是千元 (需要除以 1000 转为元，再除以 1 亿转为亿)
+    const unitDivisor = isHK || isUS ? 1000 : 1;
+    
+    // 辅助函数：安全解析数值（处理字符串、异常值）
+    const safeParse = (val, scale = 1, maxAbs = 1000) => {
+      if (val === null || val === undefined) return 0;
+      if (typeof val === 'string') return 0;  // 字符串无法解析为数值
+      const num = parseFloat(val);
+      if (isNaN(num) || !isFinite(num)) return 0;
+      // 检测异常大的值（增长率>1000% 或日期格式数据）
+      if (Math.abs(num) > maxAbs) return 0;
+      // 检测负数的每股指标（通常不合理）
+      if (scale === 100 && num < 0) return 0;
+      return parseFloat((num / scale).toFixed(2));
+    };
+    
+    // 解析财报数据 - 同花顺 F10 风格的完整财务指标
     const financials = {
-      // 基本每股指标 - 需要更准确的 API
-      eps: 0,
-      bvps: 0,
-      cfps: 0,
-      dividend: 0,
-      // 估值指标
-      pe: d.f162 ? parseFloat((d.f162 / 100).toFixed(2)) : 0,
-      pb: 0,
-      ps: 0,
-      dividendYield: d.f126 ? parseFloat(d.f126.toFixed(2)) : 0,
-      // 盈利能力 - 需要更准确的 API
-      roe: 0,
-      roa: 0,
-      grossMargin: 0,
-      netMargin: 0,
-      // 成长能力
-      revenueGrowth: 0,
-      profitGrowth: 0,
-      // 偿债能力
-      debtRatio: 0,
-      currentRatio: 0,
-      // 规模指标
-      totalRevenue: d.f104 ? parseFloat((d.f104 / 100000000).toFixed(2)) : 0,
-      netProfit: d.f109 ? parseFloat((d.f109 / 100000000).toFixed(2)) : 0,
-      totalAssets: d.f116 ? parseFloat((d.f116 / 100000000).toFixed(2)) : 0,
+      // 📊 常用指标（同花顺 F10 核心）
+      totalRevenue: d.f186 ? safeParse(d.f186 / unitDivisor / 100000000) : 0,  // 营业总收入（亿）
+      revenueGrowth: d.f187 ? safeParse(d.f187) : 0,  // 营收同比增长率（%）
+      netProfit: d.f188 ? safeParse(d.f188 / unitDivisor / 100000000) : 0,  // 归属净利润（亿）
+      profitGrowth: d.f189 ? safeParse(d.f189) : 0,  // 净利润同比增长率（%）
+      deductedNetProfit: d.f190 ? safeParse(d.f190 / unitDivisor / 100000000) : 0,  // 扣非净利润（亿）
+      deductedProfitGrowth: d.f191 ? safeParse(d.f191, 1, 1000) : 0,  // 扣非净利润同比增长率（%）
+      operatingCashFlow: d.f192 ? safeParse(d.f192 / unitDivisor / 100000000) : 0,  // 经营现金流净额（亿）
+      cashFlowGrowth: d.f193 ? safeParse(d.f193) : 0,  // 经营现金流同比增长率（%）
+      
+      // 💰 每股指标（scale=100 表示原始值需要除以 100）
+      eps: d.f194 ? safeParse(d.f194, 100) : 0,  // 基本每股收益（元）
+      bvps: d.f195 ? safeParse(d.f195, 100) : 0,  // 每股净资产（元）
+      cfps: d.f196 ? safeParse(d.f196, 100) : 0,  // 每股经营现金流（元）
+      
+      // 📈 盈利能力
+      grossMargin: d.f197 ? safeParse(d.f197, 100) : 0,  // 销售毛利率（%）
+      netMargin: d.f198 ? safeParse(d.f198, 100) : 0,  // 销售净利率（%）
+      roe: d.f199 ? safeParse(d.f199, 100) : 0,  // ROE 加权（%）
+      roa: d.f200 ? safeParse(d.f200, 100) : 0,  // ROA（%）
+      
+      // 🛡️ 偿债能力
+      debtRatio: d.f201 ? safeParse(d.f201, 100) : 0,  // 资产负债率（%）
+      currentRatio: d.f202 ? safeParse(d.f202, 100) : 0,  // 流动比率
+      quickRatio: d.f203 ? safeParse(d.f203, 100) : 0,  // 速动比率
+      
+      // 💹 估值指标
+      peStatic: d.f204 ? safeParse(d.f204, 100) : 0,  // 市盈率 (静)
+      peTTM: d.f205 ? safeParse(d.f205, 100) : 0,  // 市盈率 (TTM)
+      pb: d.f206 ? safeParse(d.f206, 100) : 0,  // 市净率
+      ps: d.f207 ? safeParse(d.f207, 100) : 0,  // 市销率
+      dividendYield: d.f208 ? safeParse(d.f208, 100) : 0,  // 股息率（%）
+      
+      // 📦 规模指标
+      totalMarketCap: d.f209 ? parseFloat(((d.f209 / unitDivisor) / 100000000).toFixed(2)) : 0,  // 总市值（亿）
+      floatMarketCap: d.f210 ? parseFloat(((d.f210 / unitDivisor) / 100000000).toFixed(2)) : 0,  // 流通市值（亿）
     };
     
     res.json({
