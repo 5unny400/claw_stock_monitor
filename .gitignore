@@ -1,0 +1,28 @@
+# 依赖
+node_modules/
+package-lock.json
+
+# 日志
+logs/
+*.log
+npm-debug.log*
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# 测试
+coverage/
+.nyc_output/

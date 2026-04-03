@@ -1,0 +1,18 @@
+{
+  "name": "stock-monitor",
+  "version": "1.0.0",
+  "description": "股票盯票验票系统 - 实时监控与验证",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "iconv-lite": "^0.7.2",
+    "node-cron": "^3.0.3",
+    "ws": "^8.20.0"
+  }
+}
