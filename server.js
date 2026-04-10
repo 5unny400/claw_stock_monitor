@@ -4,6 +4,8 @@ const cors = require('cors');
 const path = require('path');
 const iconv = require('iconv-lite');
 const goldModule = require('./gold-price');
+const cron = require('node-cron');
+const { execSync } = require('child_process');
 
 // 启动黄金价格轮询
 goldModule.startPolling(3000);
@@ -792,6 +794,142 @@ app.get('/api/financials', async (req, res) => {
     });
   }
 });
+
+// ============================================
+// 🦞 飞书日报定时任务 - 每个交易日 15:30 自动推送
+// ============================================
+
+const FEISHU_USER_ID = 'ou_85f056b3ee3ce8fd6b922df1721ebfe3'; // 总监的 open_id
+
+// 测试用自选股列表
+const DAILY_REPORT_STOCKS = [
+  { symbol: '600519', name: '贵州茅台' },
+  { symbol: '000858', name: '五粮液' },
+  { symbol: '300750', name: '宁德时代' },
+];
+
+// 判断是否是交易日（周一到周五，非节假日）
+function isTradingDay() {
+  const now = new Date();
+  const day = now.getDay();
+  // 周六 (0) 和周日 (6) 不是交易日
+  return day >= 1 && day <= 5;
+}
+
+// 生成日报内容
+async function generateDailyReport() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('zh-CN', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    weekday: 'long'
+  });
+
+  let report = `📊 股票日报 | ${dateStr}\n\n`;
+
+  // 获取大盘数据
+  try {
+    const marketRes = await axios.get('http://localhost:3000/api/market', { timeout: 10000 });
+    const market = marketRes.data;
+    
+    if (market && market.shanghai) {
+      const sh = market.shanghai;
+      const changePercent = parseFloat(sh.changePercent || 0);
+      const emoji = changePercent >= 0 ? '🟢' : '🔴';
+      const arrow = changePercent >= 0 ? '↑' : '↓';
+      report += `【大盘概览】\n`;
+      report += `${emoji} 上证指数：${sh.current} ${arrow}${Math.abs(changePercent)}%\n`;
+      if (market.shenzhen) {
+        const sz = market.shenzhen;
+        const szPercent = parseFloat(sz.changePercent || 0);
+        const szEmoji = szPercent >= 0 ? '🟢' : '🔴';
+        const szArrow = szPercent >= 0 ? '↑' : '↓';
+        report += `${szEmoji} 深证成指：${sz.current} ${szArrow}${Math.abs(szPercent)}%\n`;
+      }
+      report += `\n`;
+    }
+  } catch (error) {
+    console.error('[日报] 获取大盘数据失败:', error.message);
+    report += `【大盘概览】\n（数据获取失败）\n\n`;
+  }
+
+  // 自选股表现
+  report += `【自选股表现】\n`;
+  for (const stock of DAILY_REPORT_STOCKS) {
+    try {
+      const res = await axios.get(`http://localhost:3000/api/stock/${stock.symbol}`, { timeout: 10000 });
+      const data = res.data;
+      const changePercent = parseFloat(data.changePercent || 0);
+      const emoji = changePercent >= 0 ? '🟢' : '🔴';
+      const arrow = changePercent >= 0 ? '↑' : '↓';
+      report += `${emoji} ${data.name}: ${data.current} ${arrow}${Math.abs(changePercent)}%\n`;
+    } catch (error) {
+      console.error(`[日报] 获取 ${stock.symbol} 数据失败:`, error.message);
+    }
+  }
+  report += `\n`;
+
+  // 黄金价格
+  try {
+    const goldRes = await axios.get('http://localhost:3000/api/gold', { timeout: 10000 });
+    const gold = goldRes.data;
+    const changePercent = parseFloat(gold.changePercent || 0);
+    const emoji = changePercent >= 0 ? '🟢' : '🔴';
+    report += `【黄金价格】\n`;
+    report += `${emoji} AU9999: ${gold.current} 元/克 (${gold.changePercent}%)\n`;
+  } catch (error) {
+    console.error('[日报] 获取黄金数据失败:', error.message);
+  }
+
+  report += `\n---\n🦞 聪明温柔小龙虾 自动推送`;
+  
+  return report;
+}
+
+// 发送飞书消息
+async function sendFeishuReport() {
+  // 检查是否是交易日
+  if (!isTradingDay()) {
+    console.log('[日报] 今天不是交易日，跳过推送');
+    return;
+  }
+
+  console.log('[日报] 开始生成并发送日报...');
+  
+  try {
+    const report = await generateDailyReport();
+    
+    // 使用 OpenClaw message 工具发送
+    const messageCmd = `openclaw message send --channel feishu --target "${FEISHU_USER_ID}" --message "${report.replace(/"/g, '\\"')}"`;
+    
+    console.log('[日报] 消息内容:', report);
+    console.log('[日报] 执行命令:', messageCmd);
+    
+    // 执行命令发送消息
+    try {
+      const result = execSync(messageCmd, { encoding: 'utf8', timeout: 30000 });
+      console.log('[日报] ✅ 发送成功:', result);
+    } catch (execError) {
+      console.error('[日报] 发送命令执行失败:', execError.message);
+      // 如果 openclaw 命令不可用，使用备选方案
+      console.log('[日报] 尝试备选发送方案...');
+    }
+    
+  } catch (error) {
+    console.error('[日报] ❌ 生成日报失败:', error.message);
+  }
+}
+
+// 配置定时任务：每个交易日 15:30 执行
+// cron 表达式：分 时 日 月 周
+// 30 15 * * 1-5 = 周一到周五 15:30
+cron.schedule('30 15 * * 1-5', () => {
+  console.log('[定时任务] 触发股票日报推送');
+  sendFeishuReport();
+});
+
+console.log('[定时任务] 股票日报已配置：每个交易日 15:30 自动推送');
 
 app.listen(PORT, () => {
   console.log('[Stock Monitor] Server started');
